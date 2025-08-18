@@ -30,6 +30,18 @@ import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
+
+// Preloader component
+const Preloader = () => {
+  return (
+    <div className="preloader-overlay">
+      <div className="preloader-content">
+        <img src="store-logo.png" alt="Karyana Online" className="preloader-logo" />
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [user, setUser] = useState(null);
   const [storeId, setStoreId] = useState(null);
@@ -77,12 +89,9 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Show preloader while loading
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center text-lg">
-        Loading...
-      </div>
-    );
+    return <Preloader />;
   }
 
   const StoreSpecificPublicPage = () => {
@@ -100,7 +109,7 @@ function App() {
     }, [storeSlug]);
 
     if (storeExists === null) {
-      return <div className="h-screen flex items-center justify-center text-lg">Checking store...</div>;
+      return <Preloader />; // preloader while checking store
     }
 
     if (!storeExists) {
@@ -126,16 +135,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Landing page at root */}
         <Route path="/" element={<LandingPage />} />
-
-        {/* Public store route */}
         <Route path="/:storeSlug" element={<StoreSpecificPublicPage />} />
-
-        {/* Per-store admin login */}
         <Route path="/:storeSlug/admin-login" element={<StoreSpecificAdminLogin />} />
-
-        {/* Per-store admin dashboard */}
         <Route
           path="/:storeSlug/admin/*"
           element={
@@ -157,37 +159,18 @@ function App() {
           <Route path="settings" element={<SettingsPage storeId={storeId} />} />
         </Route>
 
-        {/* Global admin login */}
         <Route path="/admin-login" element={<AdminLogin />} />
-
-        {/* Public pages */}
         <Route path="/store-owner-signup" element={<StoreOwnerSignUp />} />
-
-        {/* Store owner payment */}
         <Route
           path="/store-owner/payment"
-          element={
-            user && !isSuperAdmin ? (
-              <StoreOwnerPayment />
-            ) : (
-              <Navigate to="/admin-login" replace />
-            )
-          }
+          element={user && !isSuperAdmin ? <StoreOwnerPayment /> : <Navigate to="/admin-login" replace />}
         />
-
         <Route path="/admin/add-products" element={<AddInitialProducts />} />
         <Route path="/admin-copy-products" element={<AdminCopyProducts />} />
 
-        {/* Super Admin */}
         <Route
           path="/super-admin/*"
-          element={
-            user && isSuperAdmin ? (
-              <SuperAdminLayout />
-            ) : (
-              <Navigate to="/admin-login" replace />
-            )
-          }
+          element={user && isSuperAdmin ? <SuperAdminLayout /> : <Navigate to="/admin-login" replace />}
         >
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="stores" element={<StoresPage />} />
