@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+.black-overla {
+    position: relative;
+}
+.black-overlay:before {
+    content: '';
+    position: absolute;
+    top:0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:rgba(0,0,0,0.80);
+}
+
+.custom-logo {
+    margin-top: -30px;
+    margin-bottom: -50px;
+}
+.search-width {
+    width: calc(100% - 300px);
+    height: 50px;
+    padding:0 20px;
+}
+
+.bottom-40 {
+    bottom: 90px;
+}
+
+.right-10 {
+    height: 56px;
+    right: 110px;
+}
+.main-logo {
+    max-width:300px;
+    margin:0 auto;
+    margin-bottom: -30px;
+}

@@ -1,0 +1,454 @@
+// --- your imports remain unchanged ---
+import React, { useState, useEffect } from "react";
+import { useCart } from "../context/CartContext";
+import FloatingCart from "./FloatingCart";
+import { useLanguage } from "../context/LanguageContext";
+import { translations } from "../locales/translations";
+import {
+  collection,
+  onSnapshot,
+  doc,
+  getDoc,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { db, auth } from "../firebase";
+
+
+// --- LanguageSwitcher component remains unchanged ---
+const LanguageSwitcher = () => {
+  const { language, toggleLanguage } = useLanguage();
+
+  return (
+    <button
+      onClick={toggleLanguage}
+      className="text-sm text-blue-600 underline float-right"
+    >
+      {language === "en" ? "اردو" : "English"}
+    </button>
+  );
+};
+
+// --- ProductCard remains unchanged ---
+const ProductCard = ({ product }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const { addToCart } = useCart();
+  const [selectedKg, setSelectedKg] = useState(1);
+  const [selectedGram, setSelectedGram] = useState(0);
+
+  const totalGrams = selectedKg * 1000 + selectedGram;
+
+  const calculatedPrice = totalGrams
+    ? Math.round((product.price / 1000) * Number(totalGrams))
+    : 0;
+
+  const handleAddToCart = () => {
+    if (totalGrams === 0) {
+      alert("Please select a valid weight greater than 0");
+      return;
+    }
+
+    addToCart({
+      ...product,
+      name: {
+        en: product.name?.[language] || product.name,
+        ur: product.name?.[language] || product.name,
+      },
+      subcategory: product.subcategory?.[language] || "",
+      price: calculatedPrice,
+      basePrice: product.price,
+      quantity: 1,
+      weight: `${selectedKg}kg${selectedGram > 0 ? ` + ${selectedGram}g` : ""}`,
+    });
+  };
+
+  const imageUrl =
+    product.imageUrl && product.imageUrl.trim() !== ""
+      ? product.imageUrl
+      : product.image && product.image.trim() !== ""
+      ? product.image
+      : `/default-images/${product.category?.toLowerCase() || "default"}.jpg`;
+
+  return (
+    <div className="bg-white rounded-2xl shadow hover:shadow-lg transition duration-300 w-full max-w-xs">
+      <img
+        src={imageUrl}
+        alt={product.name?.[language] || product.name}
+        className="w-full h-48 object-cover rounded-t-2xl"
+        onError={(e) => {
+          e.target.src = "/default-images/default.jpg";
+        }}
+      />
+      <div className="p-4">
+        <h2 className="text-lg font-semibold text-gray-800">
+          {product.name?.[language] || product.name}
+        </h2>
+        <p className="text-sm text-gray-500 mb-1">
+          {product.subcategory?.[language] || ""}
+        </p>
+
+        <div className="flex gap-2 mb-2">
+          <select
+            value={selectedKg}
+            onChange={(e) => setSelectedKg(Number(e.target.value))}
+            className="p-1 border rounded-md text-sm w-full"
+          >
+            {Array.from({ length: 21 }, (_, i) => (
+              <option key={i} value={i}>
+                {i} kg
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedGram}
+            onChange={(e) => setSelectedGram(Number(e.target.value))}
+            className="p-1 border rounded-md text-sm w-full"
+          >
+            {[0, 100, 150, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map(
+              (g) => (
+                <option key={g} value={g}>
+                  {g} g
+                </option>
+              )
+            )}
+          </select>
+        </div>
+
+        <p className="text-xl font-bold text-green-600 mb-3">
+          PKR {calculatedPrice}
+        </p>
+
+        <button
+          onClick={handleAddToCart}
+          disabled={totalGrams === 0}
+          className={`w-full py-2 rounded-md font-medium text-white ${
+            totalGrams === 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-500 hover:bg-green-600"
+          }`}
+        >
+          {t.addToCart}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// --- ProductListing ---
+
+const formatPhoneForWhatsapp = (phone) => {
+  if (!phone) return "";
+  
+  // If number starts with "0", replace with "92"
+  if (phone.startsWith("0")) {
+    return "92" + phone.slice(1);
+  }
+
+  // If it already starts with +92
+  if (phone.startsWith("+92")) {
+    return phone.replace("+", "");
+  }
+
+  return phone; // assume already correct
+};
+const ProductListing = () => {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const { cartItems } = useCart();
+
+  const [products, setProducts] = useState([]);
+  const [openTime, setOpenTime] = useState("");
+  const [closeTime, setCloseTime] = useState("");
+  const [loadingHours, setLoadingHours] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [error, setError] = useState("");
+
+  const [storeName, setStoreName] = useState("My Grocery Store");
+  const [storePhone, setStorePhone] = useState("+92 300 1234567");
+
+  // ✅ New state to show/hide the voice checkout modal
+  const [showVoiceCheckout, setShowVoiceCheckout] = useState(false);
+
+  useEffect(() => {
+    const fetchWorkingHours = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          setOpenTime("06:00");
+          setCloseTime("22:00");
+          setStoreName("My Grocery Store");
+          setStorePhone("+92 300 1234567");
+          setLoadingHours(false);
+          return;
+        }
+
+        const storesRef = collection(db, "stores");
+        const q = query(storesRef, where("storeOwnerId", "==", user.uid));
+        const storeSnapshot = await getDocs(q);
+
+        if (storeSnapshot.empty) {
+          setOpenTime("06:00");
+          setCloseTime("22:00");
+          setStoreName("My Grocery Store");
+          setStorePhone("+92 300 1234567");
+          setLoadingHours(false);
+          return;
+        }
+
+        const storeDoc = storeSnapshot.docs[0];
+        const generalDocRef = doc(db, "stores", storeDoc.id, "settings", "general");
+        const generalSnap = await getDoc(generalDocRef);
+
+        if (generalSnap.exists()) {
+          const data = generalSnap.data();
+          setOpenTime(data.openTime || "06:00");
+          setCloseTime(data.closeTime || "22:00");
+          setStoreName(data.name || "My Grocery Store");
+          setStorePhone(data.phone || "+92 300 1234567");
+        } else {
+          setOpenTime("06:00");
+          setCloseTime("22:00");
+          setStoreName("My Grocery Store");
+          setStorePhone("+92 300 1234567");
+        }
+      } catch (error) {
+        console.error("Error fetching working hours:", error);
+        setOpenTime("06:00");
+        setCloseTime("22:00");
+        setStoreName("My Grocery Store");
+        setStorePhone("+92 300 1234567");
+      }
+      setLoadingHours(false);
+    };
+
+    fetchWorkingHours();
+
+    const fetchProductsForUserStore = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setProducts([]);
+        setLoadingProducts(false);
+        setError("User not logged in");
+        return;
+      }
+
+      try {
+        const storesRef = collection(db, "stores");
+        const q = query(storesRef, where("storeOwnerId", "==", user.uid));
+        const storeSnapshot = await getDocs(q);
+
+        if (storeSnapshot.empty) {
+          setProducts([]);
+          setLoadingProducts(false);
+          setError("No store found for current user.");
+          return;
+        }
+
+        const storeDoc = storeSnapshot.docs[0];
+        const productsRef = collection(db, "stores", storeDoc.id, "products");
+
+        const unsubscribe = onSnapshot(
+          productsRef,
+          (snapshot) => {
+            const productsData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setProducts(productsData);
+            setLoadingProducts(false);
+            setError("");
+          },
+          (error) => {
+            console.error("Error fetching products:", error);
+            setError("Failed to load products.");
+            setLoadingProducts(false);
+          }
+        );
+
+        return unsubscribe;
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        setError("Failed to load products.");
+        setLoadingProducts(false);
+      }
+    };
+
+    fetchProductsForUserStore();
+  }, []);
+
+  const filteredProducts = products.filter((product) => {
+    const productName = product.name?.[language] || product.name || "";
+    return productName.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const groupedProducts = filteredProducts.reduce((acc, product) => {
+    if (!product.category) return acc;
+    if (!acc[product.category]) acc[product.category] = [];
+    acc[product.category].push(product);
+    return acc;
+  }, {});
+
+  const categoryOrder = ["Rice", "Daal", "Oils & Ghee"];
+
+  const sortedCategories = Object.keys(groupedProducts).sort((a, b) => {
+    const indexA = categoryOrder.indexOf(a);
+    const indexB = categoryOrder.indexOf(b);
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+
+    return a.localeCompare(b);
+  });
+
+  const formatTime = (time24) => {
+    if (!time24) return "";
+    const [hourStr, minStr] = time24.split(":");
+    let hour = parseInt(hourStr, 10);
+    const min = minStr;
+    const ampm = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12;
+    return `${hour}:${min} ${ampm}`;
+  };
+
+  const handleScrollToCategory = (category) => {
+    const section = document.getElementById(category);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  if (loadingProducts) return <div className="p-6">Loading products...</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {!loadingHours && (
+        <div className="w-full bg-green-600 py-3">
+          <div className="max-w-6xl mx-auto px-4 flex justify-between items-center">
+            <p className="text-left text-white mb-0 text-sm">
+              🕒 Store Hours: {formatTime(openTime)} – {formatTime(closeTime)}
+            </p>
+            <div className="flex items-center gap-1 text-white text-sm">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="white"
+                viewBox="0 0 24 24"
+                stroke="none"
+                className="w-5 h-5"
+              >
+                <path d="M6.62 10.79a15.091 15.091 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.27 11.36 11.36 0 003.56.57 1 1 0 011 1v3.5a1 1 0 01-1 1A16 16 0 014 5a1 1 0 011-1h3.5a1 1 0 011 1 11.36 11.36 0 00.57 3.56 1 1 0 01-.27 1.11l-2.18 2.12z" />
+              </svg>
+              <span>Store Phone Number : {storePhone}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search input */}
+      <div className="max-w-6xl mx-auto px-4 py-4 relative flex items-center">
+        <h2 className="font-bold text-4xl text-center">
+          <img
+            className="max-w-[260px] custom-logo"
+            src="../store-logo.png"
+            alt="Grocery Store"
+          />
+        </h2>
+        <input
+          type="text"
+          placeholder={t.searchProducts || "Search products..."}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="search-width border border-gray-300 rounded-md ml-auto max-h-[60px]"
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+            className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            aria-label="Clear search"
+            title="Clear search"
+            style={{ fontSize: "18px", fontWeight: "bold", color: "red" }}
+          >
+            &times;
+          </button>
+        )}
+      </div>
+
+      {/* Banner Section */}
+      <div
+        className="relative h-64 md:h-80 w-full overflow-hidden mb-6 shadow-md"
+        style={{
+          backgroundImage: "url(../banner.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-center text-white px-4">
+          <h1 className="text-3xl md:text-5xl font-bold">{storeName}</h1>
+          <p className="mt-2 text-md md:text-xl">
+            Freshness Delivered to Your Doorstep
+          </p>
+        </div>
+      </div>
+
+      {/* ✅ Categories Navigation */}
+      <div className="mx-auto mt-10 px-4 mb-4 flex items-center">
+        <div className="flex flex-wrap gap-2 items-center mr-auto">
+          {sortedCategories.map((category) => (
+            <button
+              key={category}
+              onClick={() => handleScrollToCategory(category)}
+              className="px-4 py-2 rounded-full bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition"
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+        {storePhone && (
+  <a
+    href={`https://wa.me/${formatPhoneForWhatsapp(storePhone)}?text=Hello%20I%20want%20to%20order`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-2 p-2 px-4 rounded-full bg-green-500 text-white hover:bg-green-600"
+  >
+    Store WhatsApp: 
+    <svg
+  xmlns="http://www.w3.org/2000/svg"
+  className="w-5 h-5"
+  viewBox="0 0 24 24"
+  fill="currentColor"
+>
+  <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.47 3.5 1.37 5.02L2 22l5.12-1.34A9.97 9.97 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10m0 18c-1.56 0-3.08-.4-4.44-1.15l-.32-.18-3.04.8.82-2.96-.2-.34A8.09 8.09 0 0 1 4 12c0-4.42 3.6-8.04 8.04-8.04 4.42 0 8.04 3.6 8.04 8.04s-3.6 8.04-8.04 8.04m4.57-6.08c-.25-.12-1.47-.73-1.7-.82-.23-.08-.4-.12-.57.12-.17.25-.65.82-.8.99-.15.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.25-.74-.66-1.25-1.47-1.4-1.72-.15-.25-.02-.39.1-.51.1-.1.25-.27.37-.4.12-.14.17-.23.25-.38.08-.15.04-.28-.02-.39-.06-.12-.57-1.37-.78-1.88-.2-.49-.4-.42-.57-.43-.15-.01-.32-.01-.5-.01-.17 0-.46.06-.7.33-.23.25-.9.88-.9 2.15 0 1.27.92 2.5 1.05 2.67.12.17 1.8 2.75 4.36 3.85.61.26 1.08.41 1.45.52.61.19 1.16.16 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.18-.48-.3z" />
+</svg>
+  </a>
+)}
+      </div>
+
+      {error && (
+        <div className="max-w-6xl mx-auto px-4 py-4 text-red-600 font-semibold">
+          {error}
+        </div>
+      )}
+
+      {sortedCategories.map((category) => (
+        <div key={category} id={category} className="py-8 px-4">
+          <h2 className="text-2xl font-bold mb-4 text-gray-700 border-b border-gray-300 pb-1">
+            {category}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 place-items-center">
+            {groupedProducts[category].map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      <FloatingCart />
+    </div>
+  );
+};
+
+export default ProductListing;
