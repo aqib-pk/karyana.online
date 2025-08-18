@@ -13,7 +13,7 @@ const LandingPage = () => {
       >
         <div className=" p-8 rounded-lg relative text-center max-w-2xl">
           <img src="store-logo.png" alt="Karyana.Online" className="main-logo" />
-          <h1 className="text-4xl font-bold mb-6">Grow Your Grocery Business Online (Karyana.online)</h1>
+          <h1 className="text-4xl font-bold mb-6">Grow Your Grocery Business Online</h1>
           <p className="px-8 mb-8">
             Get your own online store with products, orders, and customer management — all in one place.
           </p>
