@@ -25,11 +25,11 @@ import AdminCopyProducts from "./pages/AdminCopyProducts";
 
 import StorePublicPage from "./pages/StorePublicPage";
 import LandingPage from "./pages/LandingPage"; // ✅ new landing page
+import StoreNotFound from "./pages/StoreNotFound"; // ✅ import StoreNotFound
 
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
-
 
 // Preloader component
 const Preloader = () => {
@@ -113,7 +113,7 @@ function App() {
     }
 
     if (!storeExists) {
-      return <Navigate to="/" replace />;
+      return <StoreNotFound />; // ✅ show StoreNotFound instead of redirecting
     }
 
     return <StorePublicPage />;

@@ -11,6 +11,8 @@ import {
   ArrowRightOnRectangleIcon,
   ClipboardDocumentListIcon,
   ChartBarIcon,
+  Bars3Icon, // ✅ hamburger
+  XMarkIcon, // ✅ close icon
 } from "@heroicons/react/24/outline";
 
 import { StoreProvider } from "../context/StoreContext";
@@ -18,9 +20,10 @@ import { StoreProvider } from "../context/StoreContext";
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { storeSlug } = useParams(); // ✅ get slug from URL
+  const { storeSlug } = useParams();
   const [hasNewOrders, setHasNewOrders] = useState(false);
   const [storeId, setStoreId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // ✅ sidebar toggle
 
   const auth = getAuth();
 
@@ -72,7 +75,7 @@ const AdminLayout = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate(`/${storeSlug}/admin-login`); // ✅ redirect back to store-specific login
+      navigate(`/${storeSlug}/admin-login`);
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -80,8 +83,8 @@ const AdminLayout = () => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-64 bg-green-700 text-white p-6">
+      {/* Sidebar - Desktop */}
+      <aside className="hidden md:block w-64 bg-green-700 text-white p-6">
         <h2 className="text-2xl font-bold mb-6">Admin Panel</h2>
         <nav className="space-y-4">
           <Link
@@ -153,11 +156,106 @@ const AdminLayout = () => {
         </nav>
       </aside>
 
+      {/* Sidebar - Mobile */}
+      <div
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-green-700 text-white p-6 transform transition-transform duration-300 md:hidden h-full overflow-y-auto ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Admin Panel</h2>
+          <button onClick={() => setIsSidebarOpen(false)}>
+            <XMarkIcon className="h-6 w-6 text-white" />
+          </button>
+        </div>
+        <nav className="space-y-4">
+          <Link
+            to={`/${storeSlug}/admin/orders`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/orders` ? "bg-green-900" : ""
+            }`}
+          >
+            <span>📦</span>
+            <span>Online Orders</span>
+          </Link>
+          <Link
+            to={`/${storeSlug}/admin/products`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/products` ? "bg-green-900" : ""
+            }`}
+          >
+            <ShoppingCartIcon className="h-5 w-5 text-white" />
+            <span>Products</span>
+          </Link>
+          <Link
+            to={`/${storeSlug}/admin/settings`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/settings` ? "bg-green-900" : ""
+            }`}
+          >
+            <Cog6ToothIcon className="h-5 w-5 text-white" />
+            <span>Settings</span>
+          </Link>
+          <Link
+            to={`/${storeSlug}/admin/offline-orders`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/offline-orders` ? "bg-green-900" : ""
+            }`}
+          >
+            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
+            <span>Offline Orders</span>
+          </Link>
+          <Link
+            to={`/${storeSlug}/admin/offline-orders-list`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/offline-orders-list` ? "bg-green-900" : ""
+            }`}
+          >
+            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
+            <span>Offline Orders List</span>
+          </Link>
+          <Link
+            to={`/${storeSlug}/admin/sales`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/sales` ? "bg-green-900" : ""
+            }`}
+          >
+            <ChartBarIcon className="h-5 w-5 text-white" />
+            <span>Sales</span>
+          </Link>
+          <button
+            onClick={() => {
+              setIsSidebarOpen(false);
+              handleLogout();
+            }}
+            className="flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 w-full text-left"
+          >
+            <ArrowRightOnRectangleIcon className="h-5 w-5 text-white" />
+            <span>Logout</span>
+          </button>
+        </nav>
+      </div>
+
       {/* Content Area */}
-      <main className="flex-1 bg-gray-50 p-6 overflow-auto relative">
-        {/* Top bar with notification bell */}
-        <div className="flex justify-end items-center mb-4">
-          <button onClick={handleBellClick} className="relative p-2">
+      <main className="flex-1 bg-gray-50 p-6 overflow-auto relative admin-content">
+        {/* Top bar */}
+        <div className="flex justify-between items-center mb-4">
+          {/* Hamburger - Mobile */}
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="md:hidden p-2"
+          >
+            <Bars3Icon className="h-6 w-6 text-gray-700" />
+          </button>
+
+          {/* Notification bell */}
+          <button onClick={handleBellClick} className="relative p-2 ml-auto">
             <BellIcon className="h-6 w-6 text-gray-700" />
             {hasNewOrders && (
               <>
@@ -168,7 +266,7 @@ const AdminLayout = () => {
           </button>
         </div>
 
-        {/* Provide storeId via context to nested admin pages */}
+        {/* Provide storeId via context */}
         <StoreProvider storeId={storeId}>
           <Outlet />
         </StoreProvider>

@@ -287,8 +287,8 @@ const ProductListing = () => {
     <div className="min-h-screen bg-gray-100">
       {!loadingHours && (
         <div className="w-full bg-green-600 py-3">
-          <div className="max-w-6xl mx-auto px-4 flex justify-between items-center">
-            <p className="text-left text-white mb-0 text-sm">
+          <div className="max-w-6xl mx-auto px-4 flex justify-between items-center dp-block-on-mobile">
+            <p className="text-left text-white mb-0 text-sm wk-hours">
               🕒 Store Hours: {formatTime(openTime)} – {formatTime(closeTime)}
             </p>
             <div className="flex items-center gap-1 text-white text-sm">
@@ -308,7 +308,7 @@ const ProductListing = () => {
       )}
 
       {/* Search input */}
-      <div className="max-w-6xl mx-auto px-4 py-4 relative flex items-center">
+      <div className="max-w-6xl mx-auto px-4 py-4 relative gap-10 flex items-center dp-block-on-mobile">
         <h2 className="font-bold text-4xl text-center">
           <img
             className="max-w-[260px] custom-logo"
@@ -321,7 +321,7 @@ const ProductListing = () => {
           placeholder={t.searchProducts || "Search products..."}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="search-width border border-gray-300 rounded-md ml-auto max-h-[60px]"
+          className="search-width border border-gray-300 rounded-md px-4 ml-auto max-h-[60px]"
         />
         {searchTerm && (
           <button
@@ -334,11 +334,28 @@ const ProductListing = () => {
             &times;
           </button>
         )}
+        {storePhone && (
+          <a
+            href={`https://wa.me/${formatPhoneForWhatsapp(storePhone)}?text=Hello%20I%20want%20to%20order`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 whatsapp-btn rounded-full bg-green-500 text-white hover:bg-green-600"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.47 3.5 1.37 5.02L2 22l5.12-1.34A9.97 9.97 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10m0 18c-1.56 0-3.08-.4-4.44-1.15l-.32-.18-3.04.8.82-2.96-.2-.34A8.09 8.09 0 0 1 4 12c0-4.42 3.6-8.04 8.04-8.04 4.42 0 8.04 3.6 8.04 8.04s-3.6 8.04-8.04 8.04m4.57-6.08c-.25-.12-1.47-.73-1.7-.82-.23-.08-.4-.12-.57.12-.17.25-.65.82-.8.99-.15.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.25-.74-.66-1.25-1.47-1.4-1.72-.15-.25-.02-.39.1-.51.1-.1.25-.27.37-.4.12-.14.17-.23.25-.38.08-.15.04-.28-.02-.39-.06-.12-.57-1.37-.78-1.88-.2-.49-.4-.42-.57-.43-.15-.01-.32-.01-.5-.01-.17 0-.46.06-.7.33-.23.25-.9.88-.9 2.15 0 1.27.92 2.5 1.05 2.67.12.17 1.8 2.75 4.36 3.85.61.26 1.08.41 1.45.52.61.19 1.16.16 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.18-.48-.3z" />
+            </svg>
+          </a>
+        )}
       </div>
 
       {/* Banner Section */}
       <div
-        className="relative h-64 md:h-80 w-full overflow-hidden mb-6 shadow-md"
+        className="relative h-64 md:h-80 w-full overflow-hidden mb-6 shadow-md banner-section"
         style={{
           backgroundImage: "url(../banner.jpg)",
           backgroundSize: "cover",
@@ -366,24 +383,7 @@ const ProductListing = () => {
             </button>
           ))}
         </div>
-        {storePhone && (
-          <a
-            href={`https://wa.me/${formatPhoneForWhatsapp(storePhone)}?text=Hello%20I%20want%20to%20order`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 p-2 px-4 rounded-full bg-green-500 text-white hover:bg-green-600"
-          >
-            Store WhatsApp:
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M12.04 2c-5.52 0-10 4.48-10 10 0 1.77.47 3.5 1.37 5.02L2 22l5.12-1.34A9.97 9.97 0 0 0 12.04 22c5.52 0 10-4.48 10-10s-4.48-10-10-10m0 18c-1.56 0-3.08-.4-4.44-1.15l-.32-.18-3.04.8.82-2.96-.2-.34A8.09 8.09 0 0 1 4 12c0-4.42 3.6-8.04 8.04-8.04 4.42 0 8.04 3.6 8.04 8.04s-3.6 8.04-8.04 8.04m4.57-6.08c-.25-.12-1.47-.73-1.7-.82-.23-.08-.4-.12-.57.12-.17.25-.65.82-.8.99-.15.17-.3.19-.55.06-.25-.12-1.05-.39-2-1.25-.74-.66-1.25-1.47-1.4-1.72-.15-.25-.02-.39.1-.51.1-.1.25-.27.37-.4.12-.14.17-.23.25-.38.08-.15.04-.28-.02-.39-.06-.12-.57-1.37-.78-1.88-.2-.49-.4-.42-.57-.43-.15-.01-.32-.01-.5-.01-.17 0-.46.06-.7.33-.23.25-.9.88-.9 2.15 0 1.27.92 2.5 1.05 2.67.12.17 1.8 2.75 4.36 3.85.61.26 1.08.41 1.45.52.61.19 1.16.16 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.18-.48-.3z" />
-            </svg>
-          </a>
-        )}
+  
       </div>
 
       {error && (
@@ -397,7 +397,7 @@ const ProductListing = () => {
           <h2 className="text-2xl font-bold mb-4 text-gray-700 border-b border-gray-300 pb-1">
             {category}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 place-items-center">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 place-items-center">
             {groupedProducts[category].map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}

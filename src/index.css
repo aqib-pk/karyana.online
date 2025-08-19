@@ -90,3 +90,75 @@
 select {
     background:#fff;
 }
+
+.whatsapp-btn {
+    width: 60px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.whatsapp-btn svg {
+    width: 28px;
+    height: 28px;
+}
+
+.custom-logo {
+    max-width: 205px;
+}
+
+
+@media only screen and (max-width:991px) {
+    .banner-section.md\:h-80 {
+        height: 15rem;
+    }
+}
+
+@media only screen and (max-width:767px) {
+    .banner-section.md\:h-80 {
+        height: 10rem;
+    }
+    .admin-content {
+        padding: 20px 10px;
+    }
+    .admin-content .p-6 {
+        padding: 10px 10px;
+    }
+    .pd-block {
+        display: block;
+    }
+    .pd-block select,
+    .pd-block input {
+        width: 100%;
+        margin:5px 0;
+    }
+}
+
+@media only screen and (max-width:576px) {
+    .main-logo {
+        margin-top: -50px;
+    }
+    .whatsapp-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 50px;
+    }
+    .search-width {
+        width: 100%;
+        margin-top: 20px;
+        margin-bottom: 5px;
+    }
+    .dp-block-on-mobile {
+        display: block;
+    }
+    .wk-hours {
+        margin-bottom: 10px;
+    }
+}
+
+@media only screen and (max-width:480px) {
+    .h-48 {
+        height: 7rem;
+    }
+}
