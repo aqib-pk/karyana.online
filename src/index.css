@@ -85,3 +85,8 @@
     transform: translateY(-20px);
   }
 }
+
+
+select {
+    background:#fff;
+}
