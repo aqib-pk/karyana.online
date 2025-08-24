@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, storage } from "../firebase";
 import { useStore } from "../context/StoreContext";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const SettingsPage = () => {
   const { storeId } = useStore();
@@ -12,6 +13,9 @@ const SettingsPage = () => {
   const [storePhone, setStorePhone] = useState("");
   const [openTime, setOpenTime] = useState("");
   const [closeTime, setCloseTime] = useState("");
+  const [city, setCity] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoFile, setLogoFile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,17 +36,21 @@ const SettingsPage = () => {
         const generalSnap = await getDoc(generalDocRef);
         if (generalSnap.exists()) {
           const data = generalSnap.data();
-          setStoreName(data.name || "");
+          setStoreName(data.storeName || ""); // ✅ fixed
           setStoreAddress(data.address || "");
           setStorePhone(data.phone || "");
           setOpenTime(data.openTime || "06:00");
           setCloseTime(data.closeTime || "22:00");
+          setCity(data.city || "");
+          setLogoUrl(data.logoUrl || "");
         } else {
           setStoreName("");
           setStoreAddress("");
           setStorePhone("");
           setOpenTime("05:00");
           setCloseTime("22:00");
+          setCity("");
+          setLogoUrl("");
         }
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -54,6 +62,14 @@ const SettingsPage = () => {
 
     fetchSettings();
   }, [storeId]);
+
+  const handleLogoUpload = async () => {
+    if (!logoFile || !storeId) return null;
+
+    const storageRef = ref(storage, `storeLogos/${storeId}/${logoFile.name}`);
+    await uploadBytes(storageRef, logoFile);
+    return await getDownloadURL(storageRef);
+  };
 
   const saveSettings = async () => {
     if (!storeId) {
@@ -70,14 +86,29 @@ const SettingsPage = () => {
     const generalDocRef = doc(db, "stores", storeId, "settings", "general");
 
     try {
+      let uploadedLogoUrl = logoUrl;
+
+      if (logoFile) {
+        uploadedLogoUrl = await handleLogoUpload();
+        setLogoUrl(uploadedLogoUrl);
+      }
+
       await setDoc(deliveryDocRef, { rate: parseFloat(deliveryRate) });
-      await setDoc(generalDocRef, {
-        name: storeName,
-        address: storeAddress,
-        phone: storePhone,
-        openTime,
-        closeTime,
-      });
+
+      await setDoc(
+        generalDocRef,
+        {
+          storeName: storeName, // ✅ fixed
+          address: storeAddress,
+          phone: storePhone,
+          openTime,
+          closeTime,
+          city,
+          logoUrl: uploadedLogoUrl,
+        },
+        { merge: true } // 👈 important
+      );
+
       alert("Settings updated successfully!");
     } catch (error) {
       console.error("Error saving settings:", error);
@@ -104,6 +135,30 @@ const SettingsPage = () => {
         onChange={(e) => setStoreName(e.target.value)}
         className="border p-2 w-full mb-4"
         placeholder="Enter store name"
+      />
+
+      <label className="block mb-1 font-semibold">City</label>
+      <input
+        type="text"
+        value={city}
+        onChange={(e) => setCity(e.target.value)}
+        className="border p-2 w-full mb-4"
+        placeholder="Enter city name"
+      />
+
+      <label className="block mb-1 font-semibold">Store Logo</label>
+      {logoUrl && (
+        <img
+          src={logoUrl}
+          alt="Store Logo"
+          className="w-20 h-20 mb-2 rounded-full object-cover border"
+        />
+      )}
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setLogoFile(e.target.files[0])}
+        className="border p-2 w-full mb-4"
       />
 
       <label className="block mb-1 font-semibold">Store Address</label>

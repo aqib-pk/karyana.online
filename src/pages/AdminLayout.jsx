@@ -11,6 +11,7 @@ import {
   ArrowRightOnRectangleIcon,
   ClipboardDocumentListIcon,
   ChartBarIcon,
+  CreditCardIcon,
   Bars3Icon, // ✅ hamburger
   XMarkIcon, // ✅ close icon
 } from "@heroicons/react/24/outline";
@@ -135,6 +136,17 @@ const AdminLayout = () => {
             <span>Offline Orders List</span>
           </Link>
 
+          {/* ✅ Subscription Link */}
+          <Link
+            to={`/${storeSlug}/admin/subscription`}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/subscription` ? "bg-green-900" : ""
+            }`}
+          >
+            <CreditCardIcon className="h-5 w-5 text-white" />
+            <span>Subscription</span>
+          </Link>
+
           <Link
             to={`/${storeSlug}/admin/sales`}
             className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
@@ -219,6 +231,19 @@ const AdminLayout = () => {
             <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
             <span>Offline Orders List</span>
           </Link>
+
+          {/* ✅ Subscription Link (Mobile) */}
+          <Link
+            to={`/${storeSlug}/admin/subscription`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/subscription` ? "bg-green-900" : ""
+            }`}
+          >
+            <CreditCardIcon className="h-5 w-5 text-white" />
+            <span>Subscription</span>
+          </Link>
+
           <Link
             to={`/${storeSlug}/admin/sales`}
             onClick={() => setIsSidebarOpen(false)}

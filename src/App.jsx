@@ -24,14 +24,21 @@ import AdminPaymentVerification from "./pages/AdminPaymentVerification";
 import AdminCopyProducts from "./pages/AdminCopyProducts";
 
 import StorePublicPage from "./pages/StorePublicPage";
-import LandingPage from "./pages/LandingPage"; // ✅ new landing page
-import StoreNotFound from "./pages/StoreNotFound"; // ✅ import StoreNotFound
+import LandingPage from "./pages/LandingPage";
+import StoreNotFound from "./pages/StoreNotFound";
 
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
-// Preloader component
+// ✅ newly added imports
+import { AuthProvider } from "./context/AuthContext";
+import LoginSignup from "./pages/LoginSignup";
+import MyOrders from "./pages/MyOrders";
+import SubscriptionPage from "./pages/SubscriptionPage"; // ✅ Added import
+
+
+// ✅ Preloader component
 const Preloader = () => {
   return (
     <div className="preloader-overlay">
@@ -89,11 +96,11 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Show preloader while loading
   if (loading) {
     return <Preloader />;
   }
 
+  // ✅ Store-specific public page
   const StoreSpecificPublicPage = () => {
     const { storeSlug } = useParams();
     const [storeExists, setStoreExists] = useState(null);
@@ -109,16 +116,17 @@ function App() {
     }, [storeSlug]);
 
     if (storeExists === null) {
-      return <Preloader />; // preloader while checking store
+      return <Preloader />;
     }
 
     if (!storeExists) {
-      return <StoreNotFound />; // ✅ show StoreNotFound instead of redirecting
+      return <StoreNotFound />;
     }
 
     return <StorePublicPage />;
   };
 
+  // ✅ Store-specific admin login
   const StoreSpecificAdminLogin = () => {
     const { storeSlug } = useParams();
     if (!storeSlug) {
@@ -132,53 +140,74 @@ function App() {
     return <AdminLogin />;
   };
 
+  // ✅ Wrapper: Redirect /login → /:storeSlug/login
+  const StoreAwareLoginRedirect = () => {
+    const { storeSlug } = useParams();
+    if (!storeSlug) return <Navigate to="/" replace />;
+    return <LoginSignup />;
+  };
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/:storeSlug" element={<StoreSpecificPublicPage />} />
-        <Route path="/:storeSlug/admin-login" element={<StoreSpecificAdminLogin />} />
-        <Route
-          path="/:storeSlug/admin/*"
-          element={
-            user && !isSuperAdmin ? (
-              <AdminLayout />
-            ) : user && isSuperAdmin ? (
-              <Navigate to="/super-admin" replace />
-            ) : (
-              <Navigate to="/admin-login" replace />
-            )
-          }
-        >
-          <Route path="dashboard" element={<OrdersPage />} />
-          <Route path="orders" element={<OrdersPage />} />
-          <Route path="products" element={<ProductsPage />} />
-          <Route path="offline-orders" element={<OfflineOrdersPage />} />
-          <Route path="offline-orders-list" element={<OfflineOrdersListPage />} />
-          <Route path="sales" element={<SalesPage />} />
-          <Route path="settings" element={<SettingsPage storeId={storeId} />} />
-        </Route>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/:storeSlug" element={<StoreSpecificPublicPage />} />
 
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/store-owner-signup" element={<StoreOwnerSignUp />} />
-        <Route
-          path="/store-owner/payment"
-          element={user && !isSuperAdmin ? <StoreOwnerPayment /> : <Navigate to="/admin-login" replace />}
-        />
-        <Route path="/admin/add-products" element={<AddInitialProducts />} />
-        <Route path="/admin-copy-products" element={<AdminCopyProducts />} />
+          {/* Customer login & orders */}
+          <Route path="/:storeSlug/login" element={<StoreAwareLoginRedirect />} />
+          <Route path="/:storeSlug/my-orders" element={<MyOrders />} />
 
-        <Route
-          path="/super-admin/*"
-          element={user && isSuperAdmin ? <SuperAdminLayout /> : <Navigate to="/admin-login" replace />}
-        >
-          <Route path="dashboard" element={<SuperAdminDashboard />} />
-          <Route path="stores" element={<StoresPage />} />
-          <Route path="payments" element={<AdminPaymentVerification />} />
-          <Route index element={<SuperAdminDashboard />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          {/* Admin login */}
+          <Route path="/:storeSlug/admin-login" element={<StoreSpecificAdminLogin />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+
+          {/* Store Owner & Admin routes */}
+          <Route
+            path="/:storeSlug/admin/*"
+            element={
+              user && !isSuperAdmin ? (
+                <AdminLayout />
+              ) : user && isSuperAdmin ? (
+                <Navigate to="/super-admin" replace />
+              ) : (
+                <Navigate to="/admin-login" replace />
+              )
+            }
+          >
+            <Route path="dashboard" element={<OrdersPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="products" element={<ProductsPage />} />
+            <Route path="offline-orders" element={<OfflineOrdersPage />} />
+            <Route path="offline-orders-list" element={<OfflineOrdersListPage />} />
+            <Route path="sales" element={<SalesPage />} />
+            <Route path="settings" element={<SettingsPage storeId={storeId} />} />
+            <Route path="subscription" element={<SubscriptionPage storeId={storeId} />} /> {/* ✅ Added Subscription Page */}
+          </Route>
+
+          {/* Store Owner */}
+          <Route path="/store-owner-signup" element={<StoreOwnerSignUp />} />
+          <Route
+            path="/store-owner/payment"
+            element={user && !isSuperAdmin ? <StoreOwnerPayment /> : <Navigate to="/admin-login" replace />}
+          />
+          <Route path="/admin/add-products" element={<AddInitialProducts />} />
+          <Route path="/admin-copy-products" element={<AdminCopyProducts />} />
+
+          {/* Super Admin */}
+          <Route
+            path="/super-admin/*"
+            element={user && isSuperAdmin ? <SuperAdminLayout /> : <Navigate to="/admin-login" replace />}
+          >
+            <Route path="dashboard" element={<SuperAdminDashboard />} />
+            <Route path="stores" element={<StoresPage />} />
+            <Route path="payments" element={<AdminPaymentVerification />} />
+            <Route index element={<SuperAdminDashboard />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

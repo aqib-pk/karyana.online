@@ -1,8 +1,9 @@
+// src/pages/AdminLogin.jsx
 import React, { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "../firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 
 const AdminLogin = () => {
   const { storeSlug } = useParams();
@@ -16,32 +17,59 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      // 1. Authenticate with Firebase Auth
+      // 1. Authenticate
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Find store for this user by UID
-      const storesRef = collection(db, "stores");
-      const storeQuery = query(storesRef, where("storeOwnerId", "==", user.uid));
-      const storeSnapshot = await getDocs(storeQuery);
+      // 2. Get role from users collection
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
 
-      if (storeSnapshot.empty) {
-        setError("No store found for this account.");
+      if (!userSnap.exists()) {
+        setError("User not found in database.");
         return;
       }
 
-      const storeData = storeSnapshot.docs[0].data();
+      const userData = userSnap.data();
 
-      // 3. Verify slug matches URL
-      if (storeData.storeSlug !== storeSlug) {
-        setError("You are not authorized for this store.");
+      // ✅ Super Admin login
+      if (userData.role === "superadmin") {
+        navigate("/super-admin/dashboard");
         return;
       }
 
-      // ✅ Success: Go to admin dashboard
-      navigate(`/${storeSlug}/admin/dashboard`);
+      // ✅ Store Owner login
+      if (userData.role === "storeOwner") {
+        const storesRef = collection(db, "stores");
+        const storeQuery = query(storesRef, where("storeOwnerId", "==", user.uid));
+        const storeSnapshot = await getDocs(storeQuery);
+
+        if (storeSnapshot.empty) {
+          setError("No store found for this account.");
+          return;
+        }
+
+        const storeData = storeSnapshot.docs[0].data();
+
+        // If storeSlug is missing (e.g. login from /admin-login), auto-redirect to correct slug
+        if (!storeSlug) {
+          navigate(`/${storeData.storeSlug}/admin/dashboard`);
+          return;
+        }
+
+        // If storeSlug exists, validate it
+        if (storeData.storeSlug !== storeSlug) {
+          setError("You are not authorized for this store.");
+          return;
+        }
+
+        navigate(`/${storeSlug}/admin/dashboard`);
+        return;
+      }
+
+      setError("Unauthorized: Role not recognized.");
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       setError("Invalid email or password.");
     }
   };
@@ -50,7 +78,7 @@ const AdminLogin = () => {
     <div className="min-h-screen bg-gray-100 flex justify-center items-center px-4">
       <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
         <h2 className="text-xl font-bold text-center mb-4">
-          Admin Login - {storeSlug}
+          {storeSlug ? `Admin Login - ${storeSlug}` : "Super Admin Login"}
         </h2>
         {error && <p className="text-red-500 mb-2 text-sm">{error}</p>}
         <form onSubmit={handleLogin} className="space-y-4">
@@ -77,12 +105,14 @@ const AdminLogin = () => {
             Login
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{" "}
-          <Link to="/store-owner-signup" className="text-green-600 hover:underline">
-            Sign up here
-          </Link>
-        </p>
+        {storeSlug && (
+          <p className="mt-4 text-center text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link to="/store-owner-signup" className="text-green-600 hover:underline">
+              Sign up here
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );

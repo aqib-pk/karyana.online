@@ -16,9 +16,12 @@ async function getStoreUltraMsgInfo(storeId) {
     }
     const storeData = storeDoc.data();
     return {
-      ultraMsgToken: storeData.ultraMsgToken,
-      ultraMsgInstanceId: storeData.ultraMsgInstanceId,
-      storePhone: storeData.storePhone,
+      ultraMsgToken: "bvalkk0hg1rw2hd8",
+      ultraMsgInstanceId: "instance138135",
+      // Always your number as sender
+      myPhone: "+923058427519",
+      // Store owner's phone from Firestore
+      storePhone: storeData.storePhone || null,
     };
   } catch (error) {
     logger.error(`Error fetching store data for ${storeId}:`, error.message);
@@ -75,7 +78,7 @@ exports.notifyOnNewOrder = onDocumentCreated("stores/{storeId}/orders/{orderId}"
   const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
   if (!ultraMsgInfo) return;
 
-  const { ultraMsgInstanceId, ultraMsgToken, storePhone } = ultraMsgInfo;
+  const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone } = ultraMsgInfo;
 
   logger.info(`New order in store ${storeId}:`, order);
 
@@ -84,7 +87,7 @@ exports.notifyOnNewOrder = onDocumentCreated("stores/{storeId}/orders/{orderId}"
   const formattedPrice = formatPrice(totalPrice);
   const statusText = order.status || "Pending";
 
-  // Store owner message
+  // Store owner & admin message
   const ownerMessage = `🛒 *New Order Received*\n\nCustomer: ${order.fullName || "N/A"}\nPhone: ${
     order.phone || "N/A"
   }\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
@@ -94,8 +97,18 @@ exports.notifyOnNewOrder = onDocumentCreated("stores/{storeId}/orders/{orderId}"
     order.fullName || "Customer"
   }, we have received your order.\nWe’ll notify you once it’s ready.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
 
-  await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, ownerMessage);
-  if (order.phone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, order.phone, customerMessage);
+  // ✅ Always send New Order notification to your number
+  await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, myPhone, ownerMessage);
+
+  // ✅ Also send to store owner if they have a phone number
+  if (storePhone) {
+    await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, ownerMessage);
+  }
+
+  // ✅ Send confirmation to customer
+  if (order.phone) {
+    await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, order.phone, customerMessage);
+  }
 });
 
 // 📌 Trigger 2: Status changes to "Ready"
@@ -121,7 +134,7 @@ exports.notifyOnStatusReady = onDocumentUpdated("stores/{storeId}/orders/{orderI
       after.fullName || "Customer"
     }, your order is now ready.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: Ready ✅`;
 
-    // Send only to customer, skip if customer phone is same as store owner phone
+    // Send only to customer, skip if same as store owner
     if (after.phone && after.phone !== storePhone) {
       await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, after.phone, message);
     }

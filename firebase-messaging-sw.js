@@ -1,8 +1,9 @@
+// public/firebase-messaging-sw.js
 /* eslint-disable no-undef */
-importScripts("https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/9.6.10/firebase-messaging-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js");
 
-// Your Firebase config (same as in firebase.js)
+// 🔑 Your same firebase config
 firebase.initializeApp({
   apiKey: "AIzaSyA8KUZh2lP408UeLQ3jymMlVDiUk_KDr3I",
   authDomain: "grocery-store-app-dd66e.firebaseapp.com",
@@ -13,17 +14,16 @@ firebase.initializeApp({
   measurementId: "G-FJEZXCSC4X"
 });
 
-// Retrieve firebase messaging
 const messaging = firebase.messaging();
 
-// Handle background messages
+// Background notification handler
 messaging.onBackgroundMessage((payload) => {
-  console.log("Background message received: ", payload);
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: "/logo192.png" // replace with your app icon
-  };
+  console.log("📩 Background push received:", payload);
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  const { title, body } = payload.notification;
+
+  self.registration.showNotification(title, {
+    body,
+    icon: "/logo192.png" // change to your store logo if available
+  });
 });

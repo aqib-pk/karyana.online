@@ -42,32 +42,51 @@ const AdminPaymentVerification = () => {
   };
 
   // Approve payment request & extend subscription
-  const handleApprove = async (request) => {
-    try {
-      const storeRef = doc(db, "stores", request.id); // request.id is store doc id
-      const storeSnap = await getDoc(storeRef);
+  // Approve payment request & extend subscription
+const handleApprove = async (request) => {
+  try {
+    const storeRef = doc(db, "stores", request.id);
+    const storeSnap = await getDoc(storeRef);
 
-      if (!storeSnap.exists()) {
-        alert("Store data not found");
-        return;
-      }
-
-      // Always extend subscription 1 month from today
-      const today = new Date();
-      const newNextBillingDate = addOneMonth(today);
-
-      // Update subscriptionNextBilling and subscriptionStatus
-      await updateDoc(storeRef, {
-        subscriptionNextBilling: Timestamp.fromDate(newNextBillingDate),
-        subscriptionStatus: "active",
-      });
-
-      alert(`Payment approved and subscription extended to ${newNextBillingDate.toDateString()}`);
-    } catch (error) {
-      console.error("Error approving payment:", error);
-      alert("Failed to approve payment. Check console.");
+    if (!storeSnap.exists()) {
+      alert("Store data not found");
+      return;
     }
-  };
+
+    const storeData = storeSnap.data();
+
+    // Decide new start date: today
+    const today = new Date();
+
+    // If subscription already active and not expired, extend from current next billing date
+    let baseDate = today;
+    if (
+      storeData.subscriptionNextBilling &&
+      storeData.subscriptionNextBilling.toDate &&
+      storeData.subscriptionNextBilling.toDate() > today
+    ) {
+      baseDate = storeData.subscriptionNextBilling.toDate();
+    }
+
+    // Add 1 month to base date
+    const newNextBillingDate = addOneMonth(baseDate);
+
+    await updateDoc(storeRef, {
+      subscriptionStatus: "active",
+      subscriptionStart: Timestamp.fromDate(today),
+      subscriptionNextBilling: Timestamp.fromDate(newNextBillingDate),
+      paymentProofUrl: null, // clear after approval
+    });
+
+    alert(
+      `✅ Payment approved. Subscription extended until ${newNextBillingDate.toDateString()}`
+    );
+  } catch (error) {
+    console.error("Error approving payment:", error);
+    alert("❌ Failed to approve payment. Check console.");
+  }
+};
+
 
   // Reject payment request
   const handleReject = async (request) => {

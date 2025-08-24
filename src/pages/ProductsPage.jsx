@@ -67,6 +67,13 @@ const ProductsPage = () => {
       try {
         const user = auth.currentUser;
 
+        // Added debug log to check logged-in user UID
+        if (user) {
+          console.log("Logged-in user UID:", user.uid);
+        } else {
+          console.log("No user is logged in");
+        }
+
         if (!user) {
           setError("User not logged in");
           setLoading(false);
@@ -146,12 +153,13 @@ const ProductsPage = () => {
 
     try {
       const productsRef = collection(db, "stores", storeId, "products");
+      // Add product doc without imageUrl first
       const docRef = await addDoc(productsRef, {
         name,
         weight,
         price: Number(price),
         category,
-        imageUrl: "",
+        imageUrl: "", // placeholder
       });
 
       let imageUrl = "";
@@ -163,10 +171,12 @@ const ProductsPage = () => {
           defaultCategoryImages[category] || defaultCategoryImages["Others"];
       }
 
+      // Update product doc with imageUrl
       await updateDoc(doc(db, "stores", storeId, "products", docRef.id), {
         imageUrl,
       });
 
+      // Update local state
       setProducts((prev) => [
         ...prev,
         {
@@ -192,6 +202,7 @@ const ProductsPage = () => {
     }
   };
 
+  // Editing handlers
   const startEditing = (product) => {
     setEditingProductId(product.id);
     setEditFormData({
@@ -326,9 +337,8 @@ const ProductsPage = () => {
       {/* Add New Product Form */}
       <form
         onSubmit={handleAddProduct}
-        className="flex flex-wrap gap-4 items-end border p-4 rounded-lg bg-gray-50 pd-block"
+        className="flex flex-wrap gap-4 items-end border p-4 rounded-lg bg-gray-50"
       >
-        {/* inputs same as before */}
         <input
           type="text"
           placeholder="Name"
@@ -398,160 +408,155 @@ const ProductsPage = () => {
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
+
           Add Product
         </button>
       </form>
 
-      {/* ✅ Responsive Product Table */}
+      {/* Product Table */}
       {products.length === 0 ? (
         <p>No products found.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-max border">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-2 text-left">Image</th>
-                <th className="p-2 text-left">Name</th>
-                <th className="p-2 text-left">Weight</th>
-                <th className="p-2 text-left">Price (Rs)</th>
-                <th className="p-2 text-left">Category</th>
-                <th className="p-2 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((prod) => {
-                const imgSrc =
-                  prod.imageUrl && prod.imageUrl !== ""
-                    ? prod.imageUrl
-                    : defaultCategoryImages[prod.category] ||
-                      defaultCategoryImages["Others"];
+        <table className="w-full border">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="p-2 text-left">Image</th>
+              <th className="p-2 text-left">Name</th>
+              <th className="p-2 text-left">Weight</th>
+              <th className="p-2 text-left">Price (Rs)</th>
+              <th className="p-2 text-left">Category</th>
+              <th className="p-2 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((prod) => {
+              const imgSrc =
+                prod.imageUrl && prod.imageUrl !== ""
+                  ? prod.imageUrl
+                  : defaultCategoryImages[prod.category] ||
+                    defaultCategoryImages["Others"];
 
-                return editingProductId === prod.id ? (
-                  <tr key={prod.id} className="border-t">
-                    <td className="p-2">
-                      <img
-                        src={
-                          editFormData.imageFile
-                            ? URL.createObjectURL(editFormData.imageFile)
-                            : imgSrc
-                        }
-                        alt={editFormData.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          handleEditChange("imageFile", e.target.files[0])
-                        }
-                        className="mt-2"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="text"
-                        value={editFormData.name}
-                        onChange={(e) =>
-                          handleEditChange("name", e.target.value)
-                        }
-                        className="border rounded px-2 py-1 w-full"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="text"
-                        value={editFormData.weight}
-                        onChange={(e) =>
-                          handleEditChange("weight", e.target.value)
-                        }
-                        className="border rounded px-2 py-1 w-full"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        value={editFormData.price}
-                        onChange={(e) =>
-                          handleEditChange("price", e.target.value)
-                        }
-                        className="border rounded px-2 py-1 w-24"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <select
-                        value={editFormData.category}
-                        onChange={(e) =>
-                          handleEditChange("category", e.target.value)
-                        }
-                        className="border rounded px-2 py-1 w-full"
-                      >
-                        <option value="">Select Category</option>
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="p-2 flex gap-2 justify-center">
-                      <button
-                        onClick={() => saveEdit(prod.id)}
-                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={cancelEditing}
-                        className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
-                      >
-                        Cancel
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={prod.id} className="border-t">
-                    <td className="p-2">
-                      <img
-                        src={imgSrc}
-                        alt={prod.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    </td>
-                    <td className="p-2">
-                      {typeof prod.name === "object" ? prod.name.en : prod.name}
-                    </td>
-                    <td className="p-2">{prod.weight}</td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        value={prod.price}
-                        onChange={(e) =>
-                          handlePriceChange(prod.id, e.target.value)
-                        }
-                        className="border rounded px-2 py-1 w-24"
-                      />
-                    </td>
-                    <td className="p-2">{prod.category}</td>
-                    <td className="p-2 flex gap-2 justify-center mt-4">
-                      <button
-                        onClick={() => startEditing(prod)}
-                        className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(prod.id)}
-                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+              return editingProductId === prod.id ? (
+                <tr key={prod.id} className="border-t">
+                  <td className="p-2">
+                    <img
+                      src={
+                        editFormData.imageFile
+                          ? URL.createObjectURL(editFormData.imageFile)
+                          : imgSrc
+                      }
+                      alt={editFormData.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        handleEditChange("imageFile", e.target.files[0])
+                      }
+                      className="mt-2"
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="text"
+                      value={editFormData.name}
+                      onChange={(e) => handleEditChange("name", e.target.value)}
+                      className="border rounded px-2 py-1 w-full"
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="text"
+                      value={editFormData.weight}
+                      onChange={(e) =>
+                        handleEditChange("weight", e.target.value)
+                      }
+                      className="border rounded px-2 py-1 w-full"
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      value={editFormData.price}
+                      onChange={(e) => handleEditChange("price", e.target.value)}
+                      className="border rounded px-2 py-1 w-24"
+                    />
+                  </td>
+                  <td className="p-2">
+                    <select
+                      value={editFormData.category}
+                      onChange={(e) =>
+                        handleEditChange("category", e.target.value)
+                      }
+                      className="border rounded px-2 py-1 w-full"
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="p-2 flex gap-2 justify-center">
+                    <button
+                      onClick={() => saveEdit(prod.id)}
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={cancelEditing}
+                      className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={prod.id} className="border-t">
+                  <td className="p-2">
+                    <img
+                      src={imgSrc}
+                      alt={prod.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  </td>
+                  <td className="p-2">
+                    {typeof prod.name === "object" ? prod.name.en : prod.name}
+                  </td>
+                  <td className="p-2">{prod.weight}</td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      value={prod.price}
+                      onChange={(e) =>
+                        handlePriceChange(prod.id, e.target.value)
+                      }
+                      className="border rounded px-2 py-1 w-24"
+                    />
+                  </td>
+                  <td className="p-2">{prod.category}</td>
+                  <td className="p-2 flex gap-2 justify-center mt-4">
+                    <button
+                      onClick={() => startEditing(prod)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(prod.id)}
+                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
     </div>
   );

@@ -11,6 +11,7 @@ import {
   doc,
   setDoc,
   writeBatch,
+  serverTimestamp,
 } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -20,16 +21,13 @@ const StoreOwnerSignUp = () => {
     password: "",
     storeName: "",
     storePhone: "",
-    ultraMsgInstanceId: "",
-    ultraMsgToken: "",
+    city: "", // ✅ city field stays
   });
 
-  const [showWhatsAppFields, setShowWhatsAppFields] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const subscriptionPrice = 6000; // fixed monthly fee
-
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -70,35 +68,51 @@ const StoreOwnerSignUp = () => {
         subscriptionStatus: "pending_payment", // Set to pending_payment on signup
       };
 
-      if (showWhatsAppFields) {
-        if (!form.ultraMsgInstanceId || !form.ultraMsgToken) {
-          setError("Please fill both UltraMsg Instance ID and Token.");
-          setLoading(false);
-          return;
-        }
-        storeData.ultraMsgInstanceId = form.ultraMsgInstanceId;
-        storeData.ultraMsgToken = form.ultraMsgToken;
-      }
-
-      // Create new store doc
+      // ✅ Create new store doc
       const storeRef = await addDoc(collection(db, "stores"), storeData);
 
-      // Copy default products into new store's products subcollection
+      // ✅ Save city + logoUrl inside settings.general
+      await setDoc(
+        doc(db, "stores", storeRef.id, "settings", "general"),
+        {
+          storeName: form.storeName,
+          phone: form.storePhone,
+          city: form.city,
+          logoUrl: "",
+        },
+        { merge: true }
+      );
+
+      // ✅ Also create user doc in `users` collection
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        email: user.email,
+        role: "storeOwner",
+        name: form.storeName,
+        createdAt: serverTimestamp(),
+      });
+
+      // ✅ Copy default products into new store's products subcollection
       const defaultProductsSnapshot = await getDocs(
         collection(db, "defaultProducts")
       );
 
       const batch = writeBatch(db);
-
       defaultProductsSnapshot.forEach((docSnap) => {
         const productData = docSnap.data();
-        const productRef = doc(db, "stores", storeRef.id, "products", docSnap.id);
+        const productRef = doc(
+          db,
+          "stores",
+          storeRef.id,
+          "products",
+          docSnap.id
+        );
         batch.set(productRef, productData);
       });
 
       await batch.commit();
 
-      // Redirect to payment page to complete subscription
+      // ✅ Redirect to payment page to complete subscription
       navigate("/store-owner/payment");
     } catch (err) {
       console.error("Sign up error:", err);
@@ -138,6 +152,17 @@ const StoreOwnerSignUp = () => {
           className="border p-2 rounded w-full"
         />
 
+        {/* ✅ City Field */}
+        <input
+          type="text"
+          name="city"
+          placeholder="City"
+          value={form.city}
+          onChange={handleChange}
+          required
+          className="border p-2 rounded w-full"
+        />
+
         <input
           type="email"
           name="email"
@@ -161,37 +186,6 @@ const StoreOwnerSignUp = () => {
         <div className="border p-2 rounded w-full bg-gray-100 text-gray-800">
           Monthly Subscription: <strong>₨ {subscriptionPrice}</strong>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setShowWhatsAppFields((prev) => !prev)}
-          className="text-blue-600 underline hover:text-blue-800"
-        >
-          WhatsApp Integration
-        </button>
-
-        {showWhatsAppFields && (
-          <div className="space-y-3">
-            <input
-              type="text"
-              name="ultraMsgInstanceId"
-              placeholder="UltraMsg Instance ID"
-              value={form.ultraMsgInstanceId}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-              required={showWhatsAppFields}
-            />
-            <input
-              type="text"
-              name="ultraMsgToken"
-              placeholder="UltraMsg Token"
-              value={form.ultraMsgToken}
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-              required={showWhatsAppFields}
-            />
-          </div>
-        )}
 
         <button
           type="submit"

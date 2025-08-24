@@ -14,9 +14,10 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // ✅ Auth context
 
-// --- LanguageSwitcher component remains unchanged ---
+// --- LanguageSwitcher remains unchanged ---
 const LanguageSwitcher = () => {
   const { language, toggleLanguage } = useLanguage();
 
@@ -140,7 +141,6 @@ const ProductCard = ({ product }) => {
 // --- ProductListing ---
 const formatPhoneForWhatsapp = (phone) => {
   if (!phone) return "";
-
   if (phone.startsWith("0")) {
     return "92" + phone.slice(1);
   }
@@ -153,8 +153,8 @@ const formatPhoneForWhatsapp = (phone) => {
 const ProductListing = () => {
   const { language } = useLanguage();
   const t = translations[language];
-  const { cartItems } = useCart();
   const { storeSlug } = useParams();
+  const { currentUser: user, logout } = useAuth(); // ✅ fixed naming
 
   const [products, setProducts] = useState([]);
   const [openTime, setOpenTime] = useState("");
@@ -163,9 +163,11 @@ const ProductListing = () => {
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState("");
-
   const [storeName, setStoreName] = useState("My Grocery Store");
   const [storePhone, setStorePhone] = useState("+92 300 1234567");
+
+  // ✅ dropdown state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchWorkingHours = async () => {
@@ -183,7 +185,7 @@ const ProductListing = () => {
             const data = generalSnap.data();
             setOpenTime(data.openTime || "06:00");
             setCloseTime(data.closeTime || "22:00");
-            setStoreName(data.name || "My Grocery Store");
+            setStoreName(data.storeName || "My Grocery Store");
             setStorePhone(data.phone || "+92 300 1234567");
           }
         }
@@ -256,11 +258,9 @@ const ProductListing = () => {
   const sortedCategories = Object.keys(groupedProducts).sort((a, b) => {
     const indexA = categoryOrder.indexOf(a);
     const indexB = categoryOrder.indexOf(b);
-
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
-
     return a.localeCompare(b);
   });
 
@@ -274,13 +274,6 @@ const ProductListing = () => {
     return `${hour}:${min} ${ampm}`;
   };
 
-  const handleScrollToCategory = (category) => {
-    const section = document.getElementById(category);
-    if (section) {
-      section.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   if (loadingProducts) return <div className="p-6">Loading products...</div>;
 
   return (
@@ -291,17 +284,57 @@ const ProductListing = () => {
             <p className="text-left text-white mb-0 text-sm wk-hours">
               🕒 Store Hours: {formatTime(openTime)} – {formatTime(closeTime)}
             </p>
-            <div className="flex items-center gap-1 text-white text-sm">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="white"
-                viewBox="0 0 24 24"
-                stroke="none"
-                className="w-5 h-5"
-              >
-                <path d="M6.62 10.79a15.091 15.091 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.27 11.36 11.36 0 003.56.57 1 1 0 011 1v3.5a1 1 0 01-1 1A16 16 0 014 5a1 1 0 011-1h3.5a1 1 0 011 1 11.36 11.36 0 00.57 3.56 1 1 0 01-.27 1.11l-2.18 2.12z" />
-              </svg>
-              <span>Store Phone Number : {storePhone}</span>
+            <div className="flex items-center gap-3 text-white text-sm ml-auto">
+              <span className="flex items-center custom-icon"><svg
+  xmlns="http://www.w3.org/2000/svg"
+  fill="white"
+  viewBox="0 0 20 20"
+  stroke="none"
+  width="20"
+  height="20"
+>
+  <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.46.57 3.58.11.33.03.7-.24 1.01l-2.21 2.2z" />
+</svg> {storePhone}</span>
+
+              {/* ✅ Customer Auth Dropdown */}
+              {!user ? (
+                <Link
+                  to={`/${storeSlug}/login`}
+                  className="bg-white text-green-600 px-3 py-1 rounded-md text-sm font-medium"
+                >
+                  Login / Signup
+                </Link>
+              ) : (
+                <div className="relative">
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="bg-white text-green-600 px-3 py-1 rounded-md text-sm font-medium flex items-center gap-1"
+                  >
+                    Hi, {user.displayName || "Customer"} <span>▼</span>
+                  </button>
+
+                  {dropdownOpen && (
+  <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden animate-fade-in">
+    <Link
+      to={`/${storeSlug}/my-orders`}
+      className="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-600 transition"
+      onClick={() => setDropdownOpen(false)}
+    >
+      My Orders
+    </Link>
+    <button
+      onClick={() => {
+        logout();
+        setDropdownOpen(false);
+      }}
+      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition"
+    >
+      Logout
+    </button>
+  </div>
+)}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -363,7 +396,7 @@ const ProductListing = () => {
         }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-center text-white px-4">
-          <h1 className="text-3xl md:text-5xl font-bold">{storeName}</h1>
+          <h1 className="text-3xl md:text-5xl font-bold capitalize">{storeName}</h1>
           <p className="mt-2 text-md md:text-xl">
             Freshness Delivered to Your Doorstep
           </p>
@@ -383,7 +416,6 @@ const ProductListing = () => {
             </button>
           ))}
         </div>
-  
       </div>
 
       {error && (

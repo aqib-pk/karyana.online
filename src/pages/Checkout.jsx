@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
-import { collection, addDoc, Timestamp, doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  Timestamp,
+  doc,
+  getDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext"; // ✅ to get currentUser
 
-const Checkout = ({ onClose, storeId }) => {
+const Checkout = ({ onClose, storeId: propStoreId }) => {
   const [formData, setFormData] = useState({
     fullName: "",
     address: "",
@@ -14,10 +22,30 @@ const Checkout = ({ onClose, storeId }) => {
 
   const [deliveryRate, setDeliveryRate] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [loading, setLoading] = useState(false); // <-- new loading state
+  const [loading, setLoading] = useState(false);
 
   const { cartItems, clearCart } = useCart();
+  const { currentUser } = useAuth(); // ✅ get logged-in user
 
+  // ✅ Resolve storeId from prop, localStorage, or URL
+  const [storeId, setStoreId] = useState(propStoreId || null);
+
+  useEffect(() => {
+    if (!propStoreId) {
+      const savedStoreId = localStorage.getItem("storeId");
+      if (savedStoreId) {
+        setStoreId(savedStoreId);
+      } else {
+        const match = window.location.pathname.match(/store\/([^/]+)/);
+        if (match) {
+          setStoreId(match[1]);
+          localStorage.setItem("storeId", match[1]);
+        }
+      }
+    }
+  }, [propStoreId]);
+
+  // ✅ Fetch delivery rate
   useEffect(() => {
     const fetchRate = async () => {
       try {
@@ -67,12 +95,17 @@ const Checkout = ({ onClose, storeId }) => {
     }
 
     try {
-      setLoading(true); // Start loading
+      setLoading(true);
 
-      const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const deliveryCharges = formData.deliveryOption === "delivery" ? deliveryRate : 0;
+      const subtotal = cartItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      const deliveryCharges =
+        formData.deliveryOption === "delivery" ? deliveryRate : 0;
       const total = subtotal + deliveryCharges;
 
+      // ✅ Common order data
       const dataToSubmit = {
         ...cleanData(formData),
         cartItems: cleanData(cartItems),
@@ -80,11 +113,25 @@ const Checkout = ({ onClose, storeId }) => {
         total,
         createdAt: Timestamp.now(),
         status: "pending",
+        storeId,
       };
 
-      console.log("Submitting order:", dataToSubmit);
+      // ✅ Extended order data for top-level `orders`
+      const topLevelOrderData = {
+        ...dataToSubmit,
+        createdAt: serverTimestamp(),
+        customerId: currentUser?.uid || null,
+        customerName: formData.fullName,
+        storeSlug: window.location.pathname.split("/")[1] || null,
+      };
 
+      console.log("Submitting order:", topLevelOrderData);
+
+      // 1️⃣ Save to store owner's subcollection
       await addDoc(collection(db, "stores", storeId, "orders"), dataToSubmit);
+
+      // 2️⃣ Save to top-level orders (for customer "My Orders" page)
+      await addDoc(collection(db, "orders"), topLevelOrderData);
 
       setShowSuccess(true);
       clearCart();
@@ -105,7 +152,7 @@ const Checkout = ({ onClose, storeId }) => {
       console.error("Error adding order to Firestore:", error);
       alert("Error submitting order. Please try again.");
     } finally {
-      setLoading(false); // Stop loading no matter what
+      setLoading(false);
     }
   };
 
@@ -122,7 +169,7 @@ const Checkout = ({ onClose, storeId }) => {
           onChange={handleChange}
           required
           className="w-full border p-2 rounded-md"
-          disabled={loading} // disable while loading
+          disabled={loading}
         />
         <textarea
           name="address"
@@ -211,7 +258,9 @@ const Checkout = ({ onClose, storeId }) => {
       {showSuccess && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-sm w-full">
-            <h2 className="text-xl font-bold text-green-600 mb-2">🎉 Order Placed!</h2>
+            <h2 className="text-xl font-bold text-green-600 mb-2">
+              🎉 Order Placed!
+            </h2>
             <p className="text-gray-700 mb-4">
               Thank you! Your order has been successfully placed.
             </p>

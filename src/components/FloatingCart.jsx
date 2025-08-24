@@ -3,8 +3,9 @@ import { useCart } from "../context/CartContext";
 import { useLanguage } from "../context/LanguageContext";
 import { translations } from "../locales/translations";
 import Checkout from "../pages/Checkout";
-import { auth, db } from "../firebase";
+import { db } from "../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { useParams } from "react-router-dom";
 
 const FloatingCart = () => {
   const {
@@ -28,19 +29,23 @@ const FloatingCart = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [storeId, setStoreId] = useState(null);
 
-  // Fetch storeId for current logged-in user
+  // ✅ Get store slug from URL
+  const { storeSlug } = useParams();
+
+  // ✅ Fetch storeId using storeSlug (not auth.currentUser)
   useEffect(() => {
     const fetchStoreId = async () => {
       try {
-        const user = auth.currentUser;
-        if (!user) return;
+        if (!storeSlug) return;
 
         const storesRef = collection(db, "stores");
-        const q = query(storesRef, where("storeOwnerId", "==", user.uid));
+        const q = query(storesRef, where("storeSlug", "==", storeSlug));
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
           setStoreId(snapshot.docs[0].id);
+        } else {
+          console.error("No store found for slug:", storeSlug);
         }
       } catch (error) {
         console.error("Failed to fetch storeId in FloatingCart:", error);
@@ -48,7 +53,7 @@ const FloatingCart = () => {
     };
 
     fetchStoreId();
-  }, []);
+  }, [storeSlug]);
 
   return (
     <>
@@ -145,7 +150,7 @@ const FloatingCart = () => {
       )}
 
       {/* Checkout Popup Modal */}
-      {showCheckout && (
+      {showCheckout && storeId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-lg relative">
             {/* Close Button */}

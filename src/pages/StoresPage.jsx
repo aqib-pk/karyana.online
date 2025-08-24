@@ -9,7 +9,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { slugify } from "../utils/slugify"; // ✅ Import slugify
+import { slugify } from "../utils/slugify";
 
 const StoresPage = () => {
   const [stores, setStores] = useState([]);
@@ -33,31 +33,24 @@ const StoresPage = () => {
         const storesRef = collection(db, "stores");
         const snapshot = await getDocs(storesRef);
 
-        const updatedStores = await Promise.all(
-          snapshot.docs.map(async (docSnap) => {
-            const data = docSnap.data();
-            const subscriptionEndDate = data.subscriptionEnd
-              ? data.subscriptionEnd.toDate
-                ? data.subscriptionEnd.toDate()
-                : new Date(data.subscriptionEnd)
-              : null;
+        const updatedStores = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          const subscriptionNextBilling = data.subscriptionNextBilling
+            ? data.subscriptionNextBilling.toDate
+              ? data.subscriptionNextBilling.toDate()
+              : new Date(data.subscriptionNextBilling)
+            : null;
 
-            const now = new Date();
-            const isExpired = subscriptionEndDate && subscriptionEndDate < now;
+          const now = new Date();
+          const isExpired =
+            subscriptionNextBilling && subscriptionNextBilling < now;
 
-            if (isExpired && !data.isExpired) {
-              await updateDoc(doc(db, "stores", docSnap.id), {
-                isExpired: true,
-              });
-            }
-
-            return {
-              id: docSnap.id,
-              ...data,
-              isExpired,
-            };
-          })
-        );
+          return {
+            id: docSnap.id,
+            ...data,
+            isExpired,
+          };
+        });
 
         updatedStores.sort((a, b) => b.isExpired - a.isExpired);
         setStores(updatedStores);
@@ -71,7 +64,7 @@ const StoresPage = () => {
     fetchAndUpdateStores();
   }, []);
 
-  const calculateEndDate = (startDate) => {
+  const calculateNextBilling = (startDate) => {
     const date = new Date(startDate);
     date.setMonth(date.getMonth() + 1);
     return date;
@@ -90,15 +83,15 @@ const StoresPage = () => {
     }
 
     const startDate = new Date(newStore.subscriptionStart);
-    const endDate = calculateEndDate(startDate);
+    const nextBillingDate = calculateNextBilling(startDate);
 
     try {
       await addDoc(collection(db, "stores"), {
         ...newStore,
-        storeSlug: slugify(newStore.storeName), // ✅ Save slug
+        storeSlug: slugify(newStore.storeName),
         oldSlugs: [],
         subscriptionStart: Timestamp.fromDate(startDate),
-        subscriptionEnd: Timestamp.fromDate(endDate),
+        subscriptionNextBilling: Timestamp.fromDate(nextBillingDate),
         createdAt: new Date(),
         isExpired: false,
       });
@@ -135,33 +128,39 @@ const StoresPage = () => {
     }
   };
 
-  const updateSubscriptionEnd = async (storeId, newEndDate) => {
-    const endDate = new Date(newEndDate);
+  const updateNextBilling = async (storeId, newDate) => {
+    const billingDate = new Date(newDate);
     try {
       await updateDoc(doc(db, "stores", storeId), {
-        subscriptionEnd: Timestamp.fromDate(endDate),
-        isExpired: endDate < new Date(),
+        subscriptionNextBilling: Timestamp.fromDate(billingDate),
+        isExpired: billingDate < new Date(),
       });
-      alert("Subscription end date updated");
+      alert("Next billing date updated");
       setStores((prev) =>
         prev.map((store) =>
           store.id === storeId
             ? {
                 ...store,
-                subscriptionEnd: Timestamp.fromDate(endDate),
-                isExpired: endDate < new Date(),
+                subscriptionNextBilling: Timestamp.fromDate(billingDate),
+                isExpired: billingDate < new Date(),
               }
             : store
         )
       );
     } catch (err) {
-      console.error("Error updating subscription end date:", err);
+      console.error("Error updating next billing date:", err);
     }
   };
 
-  const handleNameChange = async (storeId, currentName, newName, currentSlug, oldSlugs) => {
+  const handleNameChange = async (
+    storeId,
+    currentName,
+    newName,
+    currentSlug,
+    oldSlugs
+  ) => {
     if (!newName.trim()) return alert("Store name cannot be empty");
-    if (newName === currentName) return; // No change
+    if (newName === currentName) return;
 
     const newSlug = slugify(newName);
 
@@ -176,7 +175,12 @@ const StoresPage = () => {
       setStores((prev) =>
         prev.map((store) =>
           store.id === storeId
-            ? { ...store, storeName: newName, storeSlug: newSlug, oldSlugs: [...(oldSlugs || []), currentSlug] }
+            ? {
+                ...store,
+                storeName: newName,
+                storeSlug: newSlug,
+                oldSlugs: [...(oldSlugs || []), currentSlug],
+              }
             : store
         )
       );
@@ -277,7 +281,7 @@ const StoresPage = () => {
             <th className="p-3">Email</th>
             <th className="p-3">Owner ID</th>
             <th className="p-3">Subscription Start</th>
-            <th className="p-3">Subscription End</th>
+            <th className="p-3">Next Billing</th>
             <th className="p-3">Status</th>
             <th className="p-3">Actions</th>
           </tr>
@@ -314,14 +318,27 @@ const StoresPage = () => {
                 />
               </td>
               <td className="p-3">
-                <input
-                  type="date"
-                  value={formatDateForInput(store.subscriptionEnd)}
-                  onChange={(e) =>
-                    updateSubscriptionEnd(store.id, e.target.value)
-                  }
-                  className="border p-1 rounded"
-                />
+                <div className="flex flex-col">
+                  <span className="text-gray-700 mb-1">
+                    {store.subscriptionNextBilling
+                      ? (store.subscriptionNextBilling.toDate
+                          ? store.subscriptionNextBilling
+                              .toDate()
+                              .toLocaleDateString()
+                          : new Date(
+                              store.subscriptionNextBilling
+                            ).toLocaleDateString())
+                      : "Not set"}
+                  </span>
+                  <input
+                    type="date"
+                    value={formatDateForInput(store.subscriptionNextBilling)}
+                    onChange={(e) =>
+                      updateNextBilling(store.id, e.target.value)
+                    }
+                    className="border p-1 rounded"
+                  />
+                </div>
               </td>
               <td className="p-3">
                 <span
