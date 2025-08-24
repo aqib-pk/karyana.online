@@ -25,7 +25,6 @@ const OfflineOrdersPage = () => {
       setProducts(productsData);
       setFilteredProducts(productsData);
 
-      // Initialize weightSelections with 1kg and 0g for each product
       const initialWeights = {};
       productsData.forEach(p => {
         initialWeights[p.id] = { kg: 1, gram: 0 };
@@ -64,59 +63,67 @@ const OfflineOrdersPage = () => {
     return a.localeCompare(b);
   });
 
+  // ✅ Updated format weight helper (decimal KG instead of kg+g)
+  const formatWeight = (grams) => {
+    const totalKg = grams / 1000;
+    return Number.isInteger(totalKg) ? `${totalKg}kg` : `${totalKg.toFixed(2)}kg`;
+  };
+
   const addItem = (product) => {
     const weight = weightSelections[product.id] || { kg: 1, gram: 0 };
-    const totalGrams = weight.kg * 1000 + weight.gram;
-    if (totalGrams === 0) {
+    const addedGrams = weight.kg * 1000 + weight.gram;
+    if (addedGrams === 0) {
       alert("Please select a weight greater than 0");
       return;
     }
 
-    const calculatedPrice = Math.round((product.price / 1000) * totalGrams);
-
     setSelectedItems((prev) => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item =>
-          item.id === product.id
-            ? { 
-                ...item, 
-                quantity: item.quantity + 1, 
-                weight: `${weight.kg}kg${weight.gram > 0 ? ` + ${weight.gram}g` : ""}`,
-                price: calculatedPrice
-              }
-            : item
-        );
+      const existingIndex = prev.findIndex((item) => item.id === product.id);
+
+      if (existingIndex !== -1) {
+        const updatedItems = [...prev];
+        const existing = updatedItems[existingIndex];
+
+        const newTotalGrams = existing.totalGrams + addedGrams;
+        const newPrice = Math.round((product.price / 1000) * newTotalGrams);
+
+        updatedItems[existingIndex] = {
+          ...existing,
+          totalGrams: newTotalGrams,
+          weight: formatWeight(newTotalGrams),
+          price: newPrice,
+        };
+
+        return updatedItems;
       }
-      return [
-        ...prev,
-        { 
-          ...product, 
-          quantity: 1, 
-          weight: `${weight.kg}kg${weight.gram > 0 ? ` + ${weight.gram}g` : ""}`,
-          price: calculatedPrice 
-        }
-      ];
+
+      // New item
+      const newItem = {
+        ...product,
+        totalGrams: addedGrams,
+        weight: formatWeight(addedGrams),
+        price: Math.round((product.price / 1000) * addedGrams),
+      };
+
+      return [...prev, newItem];
     });
   };
 
   const removeItem = (id) => {
-    setSelectedItems(prev => prev.filter(item => item.id !== id));
+    setSelectedItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   const calculateTotalPrice = () => {
-    return selectedItems.reduce((sum, item) => {
-      return sum + item.price * item.quantity;
-    }, 0);
+    return selectedItems.reduce((sum, item) => sum + item.price, 0);
   };
 
   const handleWeightChange = (productId, key, value) => {
-    setWeightSelections(prev => ({
+    setWeightSelections((prev) => ({
       ...prev,
       [productId]: {
         ...prev[productId],
         [key]: Number(value),
-      }
+      },
     }));
   };
 
@@ -135,8 +142,11 @@ const OfflineOrdersPage = () => {
       const offlineOrdersRef = collection(db, "stores", storeId, "offlineOrders");
 
       await addDoc(offlineOrdersRef, {
-        items: selectedItems.map(({ id, name, price, quantity, weight }) => ({
-          id, name, price, quantity, weight
+        items: selectedItems.map(({ id, name, price, weight }) => ({
+          id,
+          name,
+          price,
+          weight,
         })),
         totalPrice: calculateTotalPrice(),
         customerName,
@@ -151,13 +161,11 @@ const OfflineOrdersPage = () => {
       setCustomerName("");
       setPaymentMethod("Cash");
 
-      // Reset weights
       const resetWeights = {};
-      products.forEach(p => {
+      products.forEach((p) => {
         resetWeights[p.id] = { kg: 1, gram: 0 };
       });
       setWeightSelections(resetWeights);
-
     } catch (err) {
       console.error(err);
       alert("Failed to create offline order");
@@ -168,16 +176,49 @@ const OfflineOrdersPage = () => {
 
   const handlePrint = () => {
     const printContents = document.getElementById("printArea").innerHTML;
-    const originalContents = document.body.innerHTML;
-
-    document.body.innerHTML = printContents;
-    window.print();
-    document.body.innerHTML = originalContents;
-    window.location.reload();
+    const printWindow = window.open("", "", "height=600,width=800");
+    printWindow.document.write(`
+      <html>
+        <head><title>Print Bill</title></head>
+        <body>${printContents}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   return (
-    <div className="p-6 flex">
+    <div className="p-6">
+      {/* Customer info & payment */}
+      <div className="mt-6 max-w-md offline-info">
+        <label className="block mb-1 font-semibold">Customer Name (optional)</label>
+        <input
+          type="text"
+          className="border p-2 rounded w-full"
+          value={customerName}
+          onChange={(e) => setCustomerName(e.target.value)}
+        />
+
+        <label className="block mb-1 font-semibold mt-4">Payment Method</label>
+        <select
+          className="border p-2 rounded w-full"
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value)}
+        >
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
+        </select>
+
+        <button
+          disabled={submitting}
+          onClick={handleSubmit}
+          className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 mt-6 w-full"
+        >
+          {submitting ? "Saving..." : "Save Offline Order"}
+        </button>
+      </div>
+
+      {/* Product list */}
       <div className="flex-1">
         <h1 className="text-2xl font-bold mb-4">Create Offline Order</h1>
 
@@ -192,9 +233,7 @@ const OfflineOrdersPage = () => {
         <div>
           <h2 className="font-semibold mb-2">Select Products</h2>
 
-          {sortedCategories.length === 0 && (
-            <p>No products found.</p>
-          )}
+          {sortedCategories.length === 0 && <p>No products found.</p>}
 
           {sortedCategories.map((category) => (
             <div key={category} className="mb-8">
@@ -202,7 +241,7 @@ const OfflineOrdersPage = () => {
                 {category}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {groupedProducts[category].map(product => {
+                {groupedProducts[category].map((product) => {
                   const imageUrl =
                     product.imageUrl && product.imageUrl.trim() !== ""
                       ? product.imageUrl
@@ -211,6 +250,10 @@ const OfflineOrdersPage = () => {
                       : "/default-images/others.jpg";
 
                   const weight = weightSelections[product.id] || { kg: 1, gram: 0 };
+                  const totalGrams = weight.kg * 1000 + weight.gram;
+                  const calculatedPrice = totalGrams
+                    ? Math.round((product.price / 1000) * totalGrams)
+                    : 0;
 
                   return (
                     <div
@@ -226,8 +269,6 @@ const OfflineOrdersPage = () => {
                       <h4 className="text-lg font-semibold text-gray-800 text-center">
                         {product.name}
                       </h4>
-                      <p className="text-green-600 font-bold mt-1">PKR {product.price} / kg</p>
-
                       <div className="flex gap-2 mt-3 mb-3">
                         <select
                           value={weight.kg}
@@ -246,7 +287,7 @@ const OfflineOrdersPage = () => {
                           onChange={(e) => handleWeightChange(product.id, "gram", e.target.value)}
                           className="p-1 border rounded-md text-sm"
                         >
-                          {[0, 100, 200, 250, 300, 400, 500, 550, 600, 700, 750, 800, 900].map(
+                          {[0, 100, 150, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map(
                             (g) => (
                               <option key={g} value={g}>
                                 {g} g
@@ -255,6 +296,11 @@ const OfflineOrdersPage = () => {
                           )}
                         </select>
                       </div>
+
+                      {/* ✅ Live calculated price */}
+                      <p className="text-xl font-bold text-green-600 mb-3">
+                        PKR {calculatedPrice}
+                      </p>
 
                       <button
                         onClick={() => addItem(product)}
@@ -269,46 +315,23 @@ const OfflineOrdersPage = () => {
             </div>
           ))}
         </div>
-
-        <div className="mt-6 max-w-md">
-          <label className="block mb-1 font-semibold">Customer Name (optional)</label>
-          <input
-            type="text"
-            className="border p-2 rounded w-full"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-          />
-
-          <label className="block mb-1 font-semibold mt-4">Payment Method</label>
-          <select
-            className="border p-2 rounded w-full"
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-          >
-            <option value="Cash">Cash</option>
-            <option value="Card">Card</option>
-          </select>
-
-          <button
-            disabled={submitting}
-            onClick={handleSubmit}
-            className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 mt-6 w-full"
-          >
-            {submitting ? "Saving..." : "Save Offline Order"}
-          </button>
-        </div>
       </div>
 
+      {/* Cart */}
       <div className="w-80 fixed top-20 right-5 bg-white shadow-lg rounded p-4 max-h-[80vh] overflow-auto">
         <h2 className="text-xl font-semibold mb-4">Order Items</h2>
         {selectedItems.length === 0 && <p>No items selected.</p>}
-        {selectedItems.map(item => (
-          <div key={item.id} className="flex justify-between items-center mb-3 border-b border-gray-200 pb-2">
+        {selectedItems.map((item) => (
+          <div
+            key={item.id}
+            className="flex justify-between items-center mb-3 border-b border-gray-200 pb-2"
+          >
             <div>
               <div className="font-semibold">{item.name}</div>
+              {/* ✅ Show accumulated total weight */}
               <div className="text-sm text-gray-600">{item.weight}</div>
             </div>
-            <div className="text-green-600 font-bold">PKR {item.price * item.quantity}</div>
+            <div className="text-green-600 font-bold">PKR {item.price}</div>
             <button
               onClick={() => removeItem(item.id)}
               className="text-red-500 ml-2"
@@ -334,6 +357,7 @@ const OfflineOrdersPage = () => {
         )}
       </div>
 
+      {/* Print area */}
       <div id="printArea" style={{ display: "none" }}>
         <h2 className="text-xl font-bold mb-2">Store</h2>
         <p>Customer: {customerName || "Walk-in"}</p>
@@ -342,24 +366,22 @@ const OfflineOrdersPage = () => {
           <thead>
             <tr>
               <th style={{ borderBottom: "1px solid #000", textAlign: "left" }}>Item</th>
-              <th style={{ borderBottom: "1px solid #000", textAlign: "right" }}>Qty</th>
               <th style={{ borderBottom: "1px solid #000", textAlign: "right" }}>Weight</th>
               <th style={{ borderBottom: "1px solid #000", textAlign: "right" }}>Price (PKR)</th>
             </tr>
           </thead>
           <tbody>
-            {selectedItems.map(item => (
+            {selectedItems.map((item) => (
               <tr key={item.id}>
                 <td>{item.name}</td>
-                <td style={{ textAlign: "right" }}>{item.quantity}</td>
                 <td style={{ textAlign: "right" }}>{item.weight}</td>
-                <td style={{ textAlign: "right" }}>{item.price * item.quantity}</td>
+                <td style={{ textAlign: "right" }}>{item.price}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan="3" style={{ textAlign: "right", fontWeight: "bold" }}>Total:</td>
+              <td colSpan="2" style={{ textAlign: "right", fontWeight: "bold" }}>Total:</td>
               <td style={{ textAlign: "right", fontWeight: "bold" }}>PKR {calculateTotalPrice()}</td>
             </tr>
           </tfoot>

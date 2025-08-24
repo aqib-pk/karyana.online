@@ -106,15 +106,6 @@ const AdminLayout = () => {
             <ShoppingCartIcon className="h-5 w-5 text-white" />
             <span>Products</span>
           </Link>
-          <Link
-            to={`/${storeSlug}/admin/settings`}
-            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
-              location.pathname === `/${storeSlug}/admin/settings` ? "bg-green-900" : ""
-            }`}
-          >
-            <Cog6ToothIcon className="h-5 w-5 text-white" />
-            <span>Settings</span>
-          </Link>
 
           <Link
             to={`/${storeSlug}/admin/offline-orders`}
@@ -155,6 +146,16 @@ const AdminLayout = () => {
           >
             <ChartBarIcon className="h-5 w-5 text-white" />
             <span>Sales</span>
+          </Link>
+
+          <Link
+            to={`/${storeSlug}/admin/settings`}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/settings` ? "bg-green-900" : ""
+            }`}
+          >
+            <Cog6ToothIcon className="h-5 w-5 text-white" />
+            <span>Settings</span>
           </Link>
 
           {/* Logout button */}
