@@ -173,18 +173,20 @@ const OfflineOrdersListPage = () => {
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-2">Ordered Items:</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-52 overflow-y-auto pr-2">
-                    {order.items.map((item, idx) => (
+                    {(order.items || order.cartItems || []).map((item, idx) => (
                       <div
                         key={idx}
                         className="border rounded-lg p-3 bg-gray-50 shadow-sm hover:shadow-md transition-shadow"
                       >
                         <p className="font-semibold text-gray-900 truncate" title={item.name}>{item.name}</p>
                         <p className="text-gray-600 text-sm">
-                          Quantity: <span className="font-medium">{item.quantity} pcs</span>
+                          Quantity: <span className="font-medium">{item.quantity || 1} pcs</span>
                         </p>
-                        <p className="text-gray-600 text-sm">
-                          Weight: <span className="font-medium">{item.weight}</span>
-                        </p>
+                        {item.weight && (
+                          <p className="text-gray-600 text-sm">
+                            Weight: <span className="font-medium">{item.weight}</span>
+                          </p>
+                        )}
                         <p className="text-green-600 font-semibold mt-1">PKR {item.price}</p>
                       </div>
                     ))}

@@ -43,7 +43,7 @@ const Preloader = () => {
   return (
     <div className="preloader-overlay">
       <div className="preloader-content">
-        <img src="store-logo.png" alt="Karyana Online" className="preloader-logo" />
+        <img src="/store-logo.png" alt="Karyana Online" className="preloader-logo" />
       </div>
     </div>
   );

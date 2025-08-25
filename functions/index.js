@@ -43,20 +43,26 @@ async function sendWhatsApp(instanceId, token, to, body) {
   }
 }
 
-// 🛒 Format cart items (each on new line, no quantity)
+// 🛒 Format cart items (with quantity, price, and weight if available)
 function formatItems(cartItems) {
   return (Array.isArray(cartItems) ? cartItems : [])
     .map((item) => {
       const itemName = typeof item.name === "object" ? item.name.en : item.name;
+      const qty = item.quantity ? ` x${item.quantity}` : "";
       const weight = item.weight ? ` (${item.weight})` : "";
-      return `${itemName}${weight}`;
+      const price = item.price ? ` - Rs ${item.price}` : "";
+      return `${itemName}${weight}${qty}${price}`;
     })
     .join("\n") || "No items listed";
 }
 
 // 💰 Calculate total price (including delivery if applicable)
 function calculateTotalPrice(order) {
-  const itemsTotal = (order.cartItems || []).reduce((sum, item) => sum + Number(item.price || 0), 0);
+  const itemsTotal = (order.cartItems || []).reduce((sum, item) => {
+    const price = Number(item.price || 0);
+    const qty = Number(item.quantity || 1);
+    return sum + price * qty;
+  }, 0);
   const deliveryCharge = order.deliveryOption === "delivery" ? Number(order.deliveryCharges || 0) : 0;
   return itemsTotal + deliveryCharge;
 }
@@ -169,3 +175,70 @@ exports.notifyOnStatusShipped = onDocumentUpdated("stores/{storeId}/orders/{orde
     }
   }
 });
+
+function formatItemss(items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item) => {
+      const itemName = typeof item.name === "object" ? item.name.en : item.name;
+      const qty = item.quantity ? ` x${item.quantity}` : "";
+      const weight = item.weight ? ` (${item.weight})` : "";
+      const price = item.price ? ` - Rs ${item.price}` : "";
+      return `${itemName}${weight}${qty}${price}`;
+    })
+    .join("\n") || "No items listed";
+}
+
+
+// 📌 Trigger 4: New Offline Order Created
+exports.notifyOnNewOfflineOrder = onDocumentCreated(
+  "stores/{storeId}/offlineOrders/{orderId}",
+  async (event) => {
+    const orderSnap = event.data;
+    if (!orderSnap) return;
+
+    const order = orderSnap.data();
+    if (!order) return;
+
+    const storeId = event.params.storeId;
+    const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
+    if (!ultraMsgInfo) return;
+
+    const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone } = ultraMsgInfo;
+
+    logger.info(`🛒 New offline order in store ${storeId}:`, order);
+
+    // ✅ Use "items" (correct field name from Firestore)
+    const items = order.items || [];
+    const itemsText = formatItemss(items);
+
+    // ✅ Calculate total price using the correct field
+    const totalPrice = items.reduce((sum, item) => sum + (item.price || 0), 0);
+    const formattedPrice = formatPrice(totalPrice);
+
+    const statusText = order.status || "offline";
+
+    // Store owner & admin message
+    const ownerMessage = `🛒 *New Offline Order Recorded*\n\nCustomer: ${
+      order.fullName || "N/A"
+    }\nPhone: ${order.customerPhone || "N/A"}\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
+
+    // Customer message
+    const customerMessage = `✅ *Thank you for shopping with us!*\n\nHi ${
+      order.fullName || "Customer"
+    }, your offline order has been recorded.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
+
+    // Send to your number
+    await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, myPhone, ownerMessage);
+
+    // Send to store owner
+    if (storePhone) {
+      await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, ownerMessage);
+    }
+
+    // Send to customer
+    if (order.customerPhone) {
+      await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, order.customerPhone, customerMessage);
+    }
+  }
+);
+

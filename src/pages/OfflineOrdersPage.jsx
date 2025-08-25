@@ -10,6 +10,7 @@ const OfflineOrdersPage = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [weightSelections, setWeightSelections] = useState({});
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState(""); // ✅ NEW
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,7 +64,7 @@ const OfflineOrdersPage = () => {
     return a.localeCompare(b);
   });
 
-  // ✅ Updated format weight helper (decimal KG instead of kg+g)
+  // ✅ Format weight helper (decimal KG instead of kg+g)
   const formatWeight = (grams) => {
     const totalKg = grams / 1000;
     return Number.isInteger(totalKg) ? `${totalKg}kg` : `${totalKg.toFixed(2)}kg`;
@@ -128,51 +129,76 @@ const OfflineOrdersPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!storeId) {
-      alert("Store ID not found, cannot save offline order.");
-      return;
+  if (!storeId) {
+    alert("Store ID not found, cannot save offline order.");
+    return;
+  }
+  if (selectedItems.length === 0) {
+    alert("Please add at least one item");
+    return;
+  }
+  setSubmitting(true);
+
+  try {
+    const offlineOrdersRef = collection(db, "stores", storeId, "offlineOrders");
+
+    await addDoc(offlineOrdersRef, {
+      items: selectedItems.map(({ id, name, price, weight }) => ({
+        id,
+        name,
+        price,
+        weight,
+      })),
+      totalPrice: calculateTotalPrice(),
+      customerName,
+      customerPhone, // ✅ save phone
+      status: "offline",
+      orderType: "offline",
+      paymentMethod,
+      createdAt: Timestamp.now(),
+    });
+
+    // ✅ Build WhatsApp message
+    if (customerPhone) {
+      const formattedItems = selectedItems
+        .map(
+          (item) => `• ${item.name} (${item.weight}) - Rs ${item.price}`
+        )
+        .join("\n");
+
+      const whatsappMessage = `✅ Thank you for shopping with us!\n\nHi ${
+        customerName || "Customer"
+      }, your offline order has been recorded.\n\nItems:\n${formattedItems}\n\nTotal Price: Rs ${calculateTotalPrice()}\nStatus: Offline`;
+
+      const phoneNumber = customerPhone.startsWith("92")
+        ? customerPhone
+        : `92${customerPhone.replace(/^0+/, "")}`; // ✅ convert 0300... → 92300...
+
+      window.open(
+        `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`,
+        "_blank"
+      );
     }
-    if (selectedItems.length === 0) {
-      alert("Please add at least one item");
-      return;
-    }
-    setSubmitting(true);
 
-    try {
-      const offlineOrdersRef = collection(db, "stores", storeId, "offlineOrders");
+    alert("Offline order created successfully!");
+    setSelectedItems([]);
+    setCustomerName("");
+    setCustomerPhone(""); // ✅ reset phone
+    setPaymentMethod("Cash");
 
-      await addDoc(offlineOrdersRef, {
-        items: selectedItems.map(({ id, name, price, weight }) => ({
-          id,
-          name,
-          price,
-          weight,
-        })),
-        totalPrice: calculateTotalPrice(),
-        customerName,
-        status: "offline",
-        orderType: "offline",
-        paymentMethod,
-        createdAt: Timestamp.now(),
-      });
+    const resetWeights = {};
+    products.forEach((p) => {
+      resetWeights[p.id] = { kg: 1, gram: 0 };
+    });
+    setWeightSelections(resetWeights);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to create offline order");
+  }
 
-      alert("Offline order created successfully!");
-      setSelectedItems([]);
-      setCustomerName("");
-      setPaymentMethod("Cash");
+  setSubmitting(false);
+};
 
-      const resetWeights = {};
-      products.forEach((p) => {
-        resetWeights[p.id] = { kg: 1, gram: 0 };
-      });
-      setWeightSelections(resetWeights);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create offline order");
-    }
-
-    setSubmitting(false);
-  };
 
   const handlePrint = () => {
     const printContents = document.getElementById("printArea").innerHTML;
@@ -197,6 +223,15 @@ const OfflineOrdersPage = () => {
           className="border p-2 rounded w-full"
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
+        />
+
+        <label className="block mb-1 font-semibold mt-4">Customer Phone (optional)</label>
+        <input
+          type="text"
+          className="border p-2 rounded w-full"
+          value={customerPhone}
+          onChange={(e) => setCustomerPhone(e.target.value)}
+          placeholder="03XXXXXXXXX"
         />
 
         <label className="block mb-1 font-semibold mt-4">Payment Method</label>
@@ -328,7 +363,6 @@ const OfflineOrdersPage = () => {
           >
             <div>
               <div className="font-semibold">{item.name}</div>
-              {/* ✅ Show accumulated total weight */}
               <div className="text-sm text-gray-600">{item.weight}</div>
             </div>
             <div className="text-green-600 font-bold">PKR {item.price}</div>
@@ -361,6 +395,7 @@ const OfflineOrdersPage = () => {
       <div id="printArea" style={{ display: "none" }}>
         <h2 className="text-xl font-bold mb-2">Store</h2>
         <p>Customer: {customerName || "Walk-in"}</p>
+        <p>Phone: {customerPhone || "-"}</p> {/* ✅ Show phone */}
         <p>Date: {new Date().toLocaleString()}</p>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 10 }}>
           <thead>
