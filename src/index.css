@@ -134,6 +134,17 @@ select {
         width: 100%;
         margin:5px 0;
     }
+    .block-on-mobile {
+        display: block;
+    }
+    .block-on-mobile input,
+    .block-on-mobile select {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    .offline-info {
+        margin-top: 0 !important;
+    }
 }
 
 @media only screen and (max-width:576px) {

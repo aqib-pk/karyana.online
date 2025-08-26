@@ -16,9 +16,9 @@ async function getStoreUltraMsgInfo(storeId) {
     }
     const storeData = storeDoc.data();
     return {
-      ultraMsgToken: "bvalkk0hg1rw2hd8",
-      ultraMsgInstanceId: "instance138135",
-      myPhone: "+923058427519", // Always your number as sender
+      ultraMsgToken: "8vvteee4po6klwbo",
+      ultraMsgInstanceId: "instance140641",
+      myPhone: "+923134927600", // Always your number as sender
       storePhone: storeData.storePhone || null,
       storeName: storeData.storeName || "Your Store", // ✅ Add storeName
     };

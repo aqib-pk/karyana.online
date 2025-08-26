@@ -319,7 +319,7 @@ const ProductsPage = () => {
       {/* Add New Product Form */}
       <form
         onSubmit={handleAddProduct}
-        className="flex flex-wrap gap-4 items-end border p-4 rounded-lg bg-gray-50"
+        className="flex flex-wrap gap-4 items-end border p-4 rounded-lg bg-gray-50 block-on-mobile"
       >
         <input
           type="text"
@@ -397,146 +397,128 @@ const ProductsPage = () => {
       {products.length === 0 ? (
         <p>No products found.</p>
       ) : (
-        <table className="w-full border">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2 text-left">Image</th>
-              <th className="p-2 text-left">Name</th>
-              <th className="p-2 text-left">Weight</th>
-              <th className="p-2 text-left">Price (Rs)</th>
-              <th className="p-2 text-left">Category</th>
-              <th className="p-2 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((prod) => {
-              const selectedCategory = categories.find(
-                (c) => c.name === prod.category
-              );
-              const imgSrc =
-                prod.imageUrl && prod.imageUrl !== ""
-                  ? prod.imageUrl
-                  : selectedCategory?.imageUrl || "/default-images/default.jpg";
+        <div className="overflow-x-auto">
+  <table className="hidden md:table w-full border border-collapse">
+    <thead>
+      <tr className="bg-gray-100">
+        <th className="p-2 text-left">Image</th>
+        <th className="p-2 text-left">Name</th>
+        <th className="p-2 text-left">Weight</th>
+        <th className="p-2 text-left">Price (Rs)</th>
+        <th className="p-2 text-left">Category</th>
+        <th className="p-2 text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {products.map((prod) => {
+        const selectedCategory = categories.find(
+          (c) => c.name === prod.category
+        );
+        const imgSrc =
+          prod.imageUrl && prod.imageUrl !== ""
+            ? prod.imageUrl
+            : selectedCategory?.imageUrl || "/default-images/default.jpg";
 
-              return editingProductId === prod.id ? (
-                <tr key={prod.id} className="border-t">
-                  <td className="p-2">
-                    <img
-                      src={
-                        editFormData.imageFile
-                          ? URL.createObjectURL(editFormData.imageFile)
-                          : imgSrc
-                      }
-                      alt={editFormData.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        handleEditChange("imageFile", e.target.files[0])
-                      }
-                      className="mt-2"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="text"
-                      value={editFormData.name}
-                      onChange={(e) => handleEditChange("name", e.target.value)}
-                      className="border rounded px-2 py-1 w-full"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="text"
-                      value={editFormData.weight}
-                      onChange={(e) =>
-                        handleEditChange("weight", e.target.value)
-                      }
-                      className="border rounded px-2 py-1 w-full"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={editFormData.price}
-                      onChange={(e) => handleEditChange("price", e.target.value)}
-                      className="border rounded px-2 py-1 w-24"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <select
-                      value={editFormData.category}
-                      onChange={(e) =>
-                        handleEditChange("category", e.target.value)
-                      }
-                      className="border rounded px-2 py-1 w-full"
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-2 flex gap-2 justify-center">
-                    <button
-                      onClick={() => saveEdit(prod.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
-                    >
-                      Cancel
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={prod.id} className="border-t">
-                  <td className="p-2">
-                    <img
-                      src={imgSrc}
-                      alt={prod.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  </td>
-                  <td className="p-2">{prod.name}</td>
-                  <td className="p-2">{prod.weight}</td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={prod.price}
-                      onChange={(e) =>
-                        handlePriceChange(prod.id, e.target.value)
-                      }
-                      className="border rounded px-2 py-1 w-24"
-                    />
-                  </td>
-                  <td className="p-2">{prod.category}</td>
-                  <td className="p-2 flex gap-2 justify-center mt-4">
-                    <button
-                      onClick={() => startEditing(prod)}
-                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(prod.id)}
-                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        return (
+          <tr key={prod.id} className="border-t">
+            <td className="p-2">
+              <img
+                src={imgSrc}
+                alt={prod.name}
+                className="w-16 h-16 object-cover rounded"
+              />
+            </td>
+            <td className="p-2">{prod.name}</td>
+            <td className="p-2">{prod.weight}</td>
+            <td className="p-2">
+              <input
+                type="number"
+                value={prod.price}
+                onChange={(e) => handlePriceChange(prod.id, e.target.value)}
+                className="border rounded px-2 py-1 w-24"
+              />
+            </td>
+            <td className="p-2">{prod.category}</td>
+            <td className="p-2 flex gap-2 justify-center">
+              <button
+                onClick={() => startEditing(prod)}
+                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(prod.id)}
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+
+  {/* 📱 Mobile Card Layout */}
+  <div className="block md:hidden space-y-4">
+    {products.map((prod) => {
+      const selectedCategory = categories.find(
+        (c) => c.name === prod.category
+      );
+      const imgSrc =
+        prod.imageUrl && prod.imageUrl !== ""
+          ? prod.imageUrl
+          : selectedCategory?.imageUrl || "/default-images/default.jpg";
+
+      return (
+        <div
+          key={prod.id}
+          className="border rounded-lg p-4 shadow-sm bg-white"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <img
+              src={imgSrc}
+              alt={prod.name}
+              className="w-16 h-16 object-cover rounded"
+            />
+            <div>
+              <p className="font-semibold">{prod.name}</p>
+              <p className="text-sm text-gray-500">{prod.category}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <p className="font-medium">Weight:</p>
+            <p>{prod.weight}</p>
+            <p className="font-medium">Price:</p>
+            <input
+              type="number"
+              value={prod.price}
+              onChange={(e) => handlePriceChange(prod.id, e.target.value)}
+              className="border rounded px-2 py-1 w-full"
+            />
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => startEditing(prod)}
+              className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 w-full"
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => handleDelete(prod.id)}
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 w-full"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
+
       )}
     </div>
   );

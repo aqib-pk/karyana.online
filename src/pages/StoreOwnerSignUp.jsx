@@ -39,6 +39,8 @@ const StoreOwnerSignUp = () => {
     setError("");
     setLoading(true);
 
+    
+
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -149,6 +151,7 @@ const StoreOwnerSignUp = () => {
           value={form.storePhone}
           onChange={handleChange}
           required
+          pattern="^(\+92|0)?3\d{9}$"
           className="border p-2 rounded w-full"
         />
 
