@@ -13,33 +13,11 @@ import {
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-const categories = [
-  "Rice",
-  "Daal",
-  "Spices",
-  "Oils & Ghee",
-  "Dairy",
-  "Beverages",
-  "Snacks",
-  "Cleaning",
-];
-
-// Default images for categories (put these images in your public folder under /default-images)
-const defaultCategoryImages = {
-  Rice: "/default-images/rice.jpg",
-  Daal: "/default-images/daal.jpg",
-  Spices: "/default-images/spices.jpg",
-  "Oils & Ghee": "/default-images/oils-ghee.jpg",
-  Dairy: "/default-images/dairy.jpg",
-  Beverages: "/default-images/beverages.jpg",
-  Snacks: "/default-images/snacks.jpg",
-  Cleaning: "/default-images/cleaning.jpg",
-  Others: "/default-images/default.jpg",
-};
-
 const ProductsPage = () => {
   const [storeId, setStoreId] = useState(null);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]); // 🔹 dynamic categories
+
   const [newProduct, setNewProduct] = useState({
     name: "",
     weight: "",
@@ -67,13 +45,6 @@ const ProductsPage = () => {
       try {
         const user = auth.currentUser;
 
-        // Added debug log to check logged-in user UID
-        if (user) {
-          console.log("Logged-in user UID:", user.uid);
-        } else {
-          console.log("No user is logged in");
-        }
-
         if (!user) {
           setError("User not logged in");
           setLoading(false);
@@ -99,6 +70,27 @@ const ProductsPage = () => {
 
     fetchStore();
   }, []);
+
+  // Fetch categories from Firestore
+  useEffect(() => {
+    if (!storeId) return;
+
+    const fetchCategories = async () => {
+      try {
+        const categoriesRef = collection(db, "stores", storeId, "categories");
+        const snapshot = await getDocs(categoriesRef);
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCategories(data);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+
+    fetchCategories();
+  }, [storeId]);
 
   // Fetch products whenever storeId changes
   useEffect(() => {
@@ -135,7 +127,7 @@ const ProductsPage = () => {
     return url;
   };
 
-  // Add new product inside store's products subcollection
+  // Add new product
   const handleAddProduct = async (e) => {
     e.preventDefault();
 
@@ -153,13 +145,12 @@ const ProductsPage = () => {
 
     try {
       const productsRef = collection(db, "stores", storeId, "products");
-      // Add product doc without imageUrl first
       const docRef = await addDoc(productsRef, {
         name,
         weight,
         price: Number(price),
         category,
-        imageUrl: "", // placeholder
+        imageUrl: "",
       });
 
       let imageUrl = "";
@@ -167,16 +158,14 @@ const ProductsPage = () => {
       if (imageFile) {
         imageUrl = await uploadImageAndGetUrl(imageFile, docRef.id);
       } else {
-        imageUrl =
-          defaultCategoryImages[category] || defaultCategoryImages["Others"];
+        const selectedCategory = categories.find((c) => c.name === category);
+        imageUrl = selectedCategory?.imageUrl || "/default-images/default.jpg";
       }
 
-      // Update product doc with imageUrl
       await updateDoc(doc(db, "stores", storeId, "products", docRef.id), {
         imageUrl,
       });
 
-      // Update local state
       setProducts((prev) => [
         ...prev,
         {
@@ -287,10 +276,8 @@ const ProductsPage = () => {
       return;
     }
 
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
-    if (!confirmDelete) return;
+    if (!window.confirm("Are you sure you want to delete this product?"))
+      return;
 
     try {
       await deleteDoc(doc(db, "stores", storeId, "products", id));
@@ -322,13 +309,8 @@ const ProductsPage = () => {
     }
   };
 
-  if (loading) {
-    return <p className="p-6 text-center">Loading...</p>;
-  }
-
-  if (error) {
-    return <p className="p-6 text-center text-red-600">{error}</p>;
-  }
+  if (loading) return <p className="p-6 text-center">Loading...</p>;
+  if (error) return <p className="p-6 text-center text-red-600">{error}</p>;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
@@ -375,8 +357,8 @@ const ProductsPage = () => {
         >
           <option value="">Select Category</option>
           {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
+            <option key={cat.id} value={cat.name}>
+              {cat.name}
             </option>
           ))}
         </select>
@@ -395,21 +377,19 @@ const ProductsPage = () => {
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex"
         >
           <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-
-          Add Product
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+  stroke="white"
+  strokeWidth="2"
+  strokeLinecap="round"
+  strokeLinejoin="round"
+>
+  <line x1="12" y1="5" x2="12" y2="19" />
+  <line x1="5" y1="12" x2="19" y2="12" />
+</svg> Add Product
         </button>
       </form>
 
@@ -430,11 +410,13 @@ const ProductsPage = () => {
           </thead>
           <tbody>
             {products.map((prod) => {
+              const selectedCategory = categories.find(
+                (c) => c.name === prod.category
+              );
               const imgSrc =
                 prod.imageUrl && prod.imageUrl !== ""
                   ? prod.imageUrl
-                  : defaultCategoryImages[prod.category] ||
-                    defaultCategoryImages["Others"];
+                  : selectedCategory?.imageUrl || "/default-images/default.jpg";
 
               return editingProductId === prod.id ? (
                 <tr key={prod.id} className="border-t">
@@ -493,8 +475,8 @@ const ProductsPage = () => {
                     >
                       <option value="">Select Category</option>
                       {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
                         </option>
                       ))}
                     </select>
@@ -523,9 +505,7 @@ const ProductsPage = () => {
                       className="w-16 h-16 object-cover rounded"
                     />
                   </td>
-                  <td className="p-2">
-                    {typeof prod.name === "object" ? prod.name.en : prod.name}
-                  </td>
+                  <td className="p-2">{prod.name}</td>
                   <td className="p-2">{prod.weight}</td>
                   <td className="p-2">
                     <input

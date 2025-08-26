@@ -36,6 +36,9 @@ import { AuthProvider } from "./context/AuthContext";
 import LoginSignup from "./pages/LoginSignup";
 import MyOrders from "./pages/MyOrders";
 import SubscriptionPage from "./pages/SubscriptionPage"; // ✅ Added import
+import CategoriesPage from "./pages/CategoriesPage";
+import DashboardPage from "./pages/DashboardPage";
+
 
 
 // ✅ Preloader component
@@ -176,12 +179,13 @@ function App() {
               )
             }
           >
-            <Route path="dashboard" element={<OrdersPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="products" element={<ProductsPage />} />
             <Route path="offline-orders" element={<OfflineOrdersPage />} />
             <Route path="offline-orders-list" element={<OfflineOrdersListPage />} />
             <Route path="sales" element={<SalesPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
             <Route path="settings" element={<SettingsPage storeId={storeId} />} />
             <Route path="subscription" element={<SubscriptionPage storeId={storeId} />} /> {/* ✅ Added Subscription Page */}
           </Route>

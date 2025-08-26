@@ -107,6 +107,17 @@ const AdminLayout = () => {
             <span>Products</span>
           </Link>
 
+          {/* ✅ Categories Link */}
+          <Link
+            to={`/${storeSlug}/admin/categories`}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/categories` ? "bg-green-900" : ""
+            }`}
+          >
+            <span>📂</span>
+            <span>Categories</span>
+          </Link>
+
           <Link
             to={`/${storeSlug}/admin/offline-orders`}
             className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
@@ -145,7 +156,7 @@ const AdminLayout = () => {
             }`}
           >
             <ChartBarIcon className="h-5 w-5 text-white" />
-            <span>Sales</span>
+            <span>Offline Sales</span>
           </Link>
 
           <Link
@@ -202,6 +213,19 @@ const AdminLayout = () => {
             <ShoppingCartIcon className="h-5 w-5 text-white" />
             <span>Products</span>
           </Link>
+
+          {/* ✅ Categories Link (Mobile) */}
+          <Link
+            to={`/${storeSlug}/admin/categories`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/categories` ? "bg-green-900" : ""
+            }`}
+          >
+            <span>📂</span>
+            <span>Categories</span>
+          </Link>
+
           <Link
             to={`/${storeSlug}/admin/settings`}
             onClick={() => setIsSidebarOpen(false)}
