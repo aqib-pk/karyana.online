@@ -85,7 +85,7 @@ const LandingPage = () => {
       </section>
 
       {/* ✅ Stores Section with Search */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-10">Our Stores</h2>
 
@@ -148,7 +148,7 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-10">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -177,7 +177,7 @@ const LandingPage = () => {
       </section>
 
       {/* Features */}
-      <section className="py-16">
+      <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-10">Why Choose Us?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -198,7 +198,7 @@ const LandingPage = () => {
       </section>
 
       {/* Pricing */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-10">Pricing</h2>
           <div className="bg-white shadow rounded-lg p-8">
@@ -223,7 +223,7 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16">
+      <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-10">What Our Customers Say</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -242,7 +242,7 @@ const LandingPage = () => {
       </section>
 
       {/* FAQ */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold mb-10 text-center">
             Frequently Asked Questions
@@ -266,7 +266,7 @@ const LandingPage = () => {
       </section>
 
       {/* Contact */}
-      <section className="py-16 text-center">
+      <section className="py-16 text-center px-4">
         <h2 className="text-3xl font-bold mb-4">Have Questions?</h2>
         <p className="mb-4">We’re here to help you start your online store.</p>
         <div className="space-x-4">

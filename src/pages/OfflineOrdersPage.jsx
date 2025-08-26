@@ -158,28 +158,6 @@ const OfflineOrdersPage = () => {
       createdAt: Timestamp.now(),
     });
 
-    // ✅ Build WhatsApp message
-    if (customerPhone) {
-      const formattedItems = selectedItems
-        .map(
-          (item) => `• ${item.name} (${item.weight}) - Rs ${item.price}`
-        )
-        .join("\n");
-
-      const whatsappMessage = `✅ Thank you for shopping with us!\n\nHi ${
-        customerName || "Customer"
-      }, your offline order has been recorded.\n\nItems:\n${formattedItems}\n\nTotal Price: Rs ${calculateTotalPrice()}\nStatus: Offline`;
-
-      const phoneNumber = customerPhone.startsWith("92")
-        ? customerPhone
-        : `92${customerPhone.replace(/^0+/, "")}`; // ✅ convert 0300... → 92300...
-
-      window.open(
-        `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`,
-        "_blank"
-      );
-    }
-
     alert("Offline order created successfully!");
     setSelectedItems([]);
     setCustomerName("");

@@ -118,34 +118,47 @@ exports.notifyOnNewOrder = onDocumentCreated("stores/{storeId}/orders/{orderId}"
 });
 
 // 📌 Trigger 2: Status changes to "Ready"
+// 📌 Trigger 2: Status changes to "Ready"
 exports.notifyOnStatusReady = onDocumentUpdated("stores/{storeId}/orders/{orderId}", async (event) => {
   const before = event.data.before.data();
   const after = event.data.after.data();
   if (!before || !after) return;
 
-  if (before.status !== "ready" && after.status === "ready") {
+  const beforeStatus = (before.status || "").toLowerCase();
+  const afterStatus = (after.status || "").toLowerCase();
+
+  if (beforeStatus !== "ready" && afterStatus === "ready") {
     const storeId = event.params.storeId;
     const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
     if (!ultraMsgInfo) return;
 
-    const { ultraMsgInstanceId, ultraMsgToken, storePhone } = ultraMsgInfo;
-
-    logger.info(`Order ${event.params.orderId} in store ${storeId} is ready.`);
+    const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone } = ultraMsgInfo;
 
     const itemsText = formatItems(after.cartItems);
     const totalPrice = calculateTotalPrice(after);
     const formattedPrice = formatPrice(totalPrice);
 
-    const message = `📢 *Your order is ready for pickup!*\n\nHi ${
+    const message = `📢 *Order Ready for Pickup!*\n\nHi ${
       after.fullName || "Customer"
     }, your order is now ready.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: Ready ✅`;
 
-    // Send only to customer, skip if same as store owner
-    if (after.phone && after.phone !== storePhone) {
+    // ✅ Notify customer
+    if (after.phone) {
       await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, after.phone, message);
     }
+
+    // ✅ Notify store owner
+    if (storePhone) {
+      await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, message);
+    }
+
+    // ✅ Always notify admin (your number)
+    await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, myPhone, message);
+
+    logger.info(`✅ Ready notification sent for order ${event.params.orderId}`);
   }
 });
+
 
 // 📌 Trigger 3: Status changes to "Shipped" (home delivery only)
 exports.notifyOnStatusShipped = onDocumentUpdated("stores/{storeId}/orders/{orderId}", async (event) => {
