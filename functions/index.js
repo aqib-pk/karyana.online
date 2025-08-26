@@ -18,10 +18,9 @@ async function getStoreUltraMsgInfo(storeId) {
     return {
       ultraMsgToken: "bvalkk0hg1rw2hd8",
       ultraMsgInstanceId: "instance138135",
-      // Always your number as sender
-      myPhone: "+923058427519",
-      // Store owner's phone from Firestore
+      myPhone: "+923058427519", // Always your number as sender
       storePhone: storeData.storePhone || null,
+      storeName: storeData.storeName || "Your Store", // ✅ Add storeName
     };
   } catch (error) {
     logger.error(`Error fetching store data for ${storeId}:`, error.message);
@@ -29,7 +28,7 @@ async function getStoreUltraMsgInfo(storeId) {
   }
 }
 
-// Modified sendWhatsApp to accept dynamic token and instanceId
+// WhatsApp sender
 async function sendWhatsApp(instanceId, token, to, body) {
   try {
     await axios.post(`https://api.ultramsg.com/${instanceId}/messages/chat`, {
@@ -43,7 +42,7 @@ async function sendWhatsApp(instanceId, token, to, body) {
   }
 }
 
-// 🛒 Format cart items (with quantity, price, and weight if available)
+// 🛒 Format cart items
 function formatItems(cartItems) {
   return (Array.isArray(cartItems) ? cartItems : [])
     .map((item) => {
@@ -56,7 +55,7 @@ function formatItems(cartItems) {
     .join("\n") || "No items listed";
 }
 
-// 💰 Calculate total price (including delivery if applicable)
+// 💰 Total price calculator
 function calculateTotalPrice(order) {
   const itemsTotal = (order.cartItems || []).reduce((sum, item) => {
     const price = Number(item.price || 0);
@@ -67,10 +66,12 @@ function calculateTotalPrice(order) {
   return itemsTotal + deliveryCharge;
 }
 
-// 🤑 Format number with commas for thousands
+// 🤑 Number formatter
 function formatPrice(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
+/* ----------------------------- TRIGGERS ----------------------------- */
 
 // 📌 Trigger 1: New Order Created
 exports.notifyOnNewOrder = onDocumentCreated("stores/{storeId}/orders/{orderId}", async (event) => {
@@ -84,174 +85,107 @@ exports.notifyOnNewOrder = onDocumentCreated("stores/{storeId}/orders/{orderId}"
   const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
   if (!ultraMsgInfo) return;
 
-  const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone } = ultraMsgInfo;
-
-  logger.info(`New order in store ${storeId}:`, order);
+  const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone, storeName } = ultraMsgInfo;
 
   const itemsText = formatItems(order.cartItems);
   const totalPrice = calculateTotalPrice(order);
   const formattedPrice = formatPrice(totalPrice);
   const statusText = order.status || "Pending";
 
-  // Store owner & admin message
-  const ownerMessage = `🛒 *New Order Received*\n\nCustomer: ${order.fullName || "N/A"}\nPhone: ${
+  const ownerMessage = `🛒 *New Order in ${storeName}*\n\nCustomer: ${order.fullName || "N/A"}\nPhone: ${
     order.phone || "N/A"
   }\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
 
-  // Customer message
-  const customerMessage = `✅ *Thank you for your order!*\n\nHi ${
+  const customerMessage = `✅ *Thank you for your order at ${storeName}!*\n\nHi ${
     order.fullName || "Customer"
   }, we have received your order.\nWe’ll notify you once it’s ready.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
 
-  // ✅ Always send New Order notification to your number
   await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, myPhone, ownerMessage);
-
-  // ✅ Also send to store owner if they have a phone number
-  if (storePhone) {
-    await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, ownerMessage);
-  }
-
-  // ✅ Send confirmation to customer
-  if (order.phone) {
-    await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, order.phone, customerMessage);
-  }
+  if (storePhone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, ownerMessage);
+  if (order.phone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, order.phone, customerMessage);
 });
 
-// 📌 Trigger 2: Status changes to "Ready"
 // 📌 Trigger 2: Status changes to "Ready"
 exports.notifyOnStatusReady = onDocumentUpdated("stores/{storeId}/orders/{orderId}", async (event) => {
   const before = event.data.before.data();
   const after = event.data.after.data();
   if (!before || !after) return;
 
-  const beforeStatus = (before.status || "").toLowerCase();
-  const afterStatus = (after.status || "").toLowerCase();
-
-  if (beforeStatus !== "ready" && afterStatus === "ready") {
+  if ((before.status || "").toLowerCase() !== "ready" && (after.status || "").toLowerCase() === "ready") {
     const storeId = event.params.storeId;
     const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
     if (!ultraMsgInfo) return;
 
-    const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone } = ultraMsgInfo;
+    const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone, storeName } = ultraMsgInfo;
 
     const itemsText = formatItems(after.cartItems);
     const totalPrice = calculateTotalPrice(after);
     const formattedPrice = formatPrice(totalPrice);
 
-    const message = `📢 *Order Ready for Pickup!*\n\nHi ${
+    const message = `📢 *Order Ready at ${storeName}*\n\nHi ${
       after.fullName || "Customer"
     }, your order is now ready.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: Ready ✅`;
 
-    // ✅ Notify customer
-    if (after.phone) {
-      await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, after.phone, message);
-    }
-
-    // ✅ Notify store owner
-    if (storePhone) {
-      await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, message);
-    }
-
-    // ✅ Always notify admin (your number)
+    if (after.phone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, after.phone, message);
+    if (storePhone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, message);
     await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, myPhone, message);
-
-    logger.info(`✅ Ready notification sent for order ${event.params.orderId}`);
   }
 });
 
-
-// 📌 Trigger 3: Status changes to "Shipped" (home delivery only)
+// 📌 Trigger 3: Status changes to "Shipped"
 exports.notifyOnStatusShipped = onDocumentUpdated("stores/{storeId}/orders/{orderId}", async (event) => {
   const before = event.data.before.data();
   const after = event.data.after.data();
   if (!before || !after) return;
 
-  if (before.status !== "shipped" && after.status === "shipped") {
-    if (after.deliveryOption === "delivery") {
-      const storeId = event.params.storeId;
-      const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
-      if (!ultraMsgInfo) return;
-
-      const { ultraMsgInstanceId, ultraMsgToken } = ultraMsgInfo;
-
-      logger.info(`Order ${event.params.orderId} in store ${storeId} has shipped.`);
-
-      const itemsText = formatItems(after.cartItems);
-      const totalPrice = calculateTotalPrice(after);
-      const formattedPrice = formatPrice(totalPrice);
-
-      const message = `📦 *Your order has been shipped!*\n\nHi ${
-        after.fullName || "Customer"
-      }, your order is on its way.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: Shipped 🚚`;
-
-      if (after.phone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, after.phone, message);
-    }
-  }
-});
-
-function formatItemss(items) {
-  return (Array.isArray(items) ? items : [])
-    .map((item) => {
-      const itemName = typeof item.name === "object" ? item.name.en : item.name;
-      const qty = item.quantity ? ` x${item.quantity}` : "";
-      const weight = item.weight ? ` (${item.weight})` : "";
-      const price = item.price ? ` - Rs ${item.price}` : "";
-      return `${itemName}${weight}${qty}${price}`;
-    })
-    .join("\n") || "No items listed";
-}
-
-
-// 📌 Trigger 4: New Offline Order Created
-exports.notifyOnNewOfflineOrder = onDocumentCreated(
-  "stores/{storeId}/offlineOrders/{orderId}",
-  async (event) => {
-    const orderSnap = event.data;
-    if (!orderSnap) return;
-
-    const order = orderSnap.data();
-    if (!order) return;
-
+  if (before.status !== "shipped" && after.status === "shipped" && after.deliveryOption === "delivery") {
     const storeId = event.params.storeId;
     const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
     if (!ultraMsgInfo) return;
 
-    const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone } = ultraMsgInfo;
+    const { ultraMsgInstanceId, ultraMsgToken, storeName } = ultraMsgInfo;
 
-    logger.info(`🛒 New offline order in store ${storeId}:`, order);
-
-    // ✅ Use "items" (correct field name from Firestore)
-    const items = order.items || [];
-    const itemsText = formatItemss(items);
-
-    // ✅ Calculate total price using the correct field
-    const totalPrice = items.reduce((sum, item) => sum + (item.price || 0), 0);
+    const itemsText = formatItems(after.cartItems);
+    const totalPrice = calculateTotalPrice(after);
     const formattedPrice = formatPrice(totalPrice);
 
-    const statusText = order.status || "offline";
+    const message = `📦 *Order Shipped from ${storeName}*\n\nHi ${
+      after.fullName || "Customer"
+    }, your order is on its way.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: Shipped 🚚`;
 
-    // Store owner & admin message
-    const ownerMessage = `🛒 *New Offline Order Recorded*\n\nCustomer: ${
-      order.fullName || "N/A"
-    }\nPhone: ${order.customerPhone || "N/A"}\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
-
-    // Customer message
-    const customerMessage = `✅ *Thank you for shopping with us!*\n\nHi ${
-      order.fullName || "Customer"
-    }, your offline order has been recorded.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
-
-    // Send to your number
-    await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, myPhone, ownerMessage);
-
-    // Send to store owner
-    if (storePhone) {
-      await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, ownerMessage);
-    }
-
-    // Send to customer
-    if (order.customerPhone) {
-      await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, order.customerPhone, customerMessage);
-    }
+    if (after.phone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, after.phone, message);
   }
-);
+});
 
+// 📌 Trigger 4: New Offline Order Created
+exports.notifyOnNewOfflineOrder = onDocumentCreated("stores/{storeId}/offlineOrders/{orderId}", async (event) => {
+  const orderSnap = event.data;
+  if (!orderSnap) return;
+
+  const order = orderSnap.data();
+  if (!order) return;
+
+  const storeId = event.params.storeId;
+  const ultraMsgInfo = await getStoreUltraMsgInfo(storeId);
+  if (!ultraMsgInfo) return;
+
+  const { ultraMsgInstanceId, ultraMsgToken, myPhone, storePhone, storeName } = ultraMsgInfo;
+
+  const items = order.items || [];
+  const itemsText = formatItems(items);
+  const totalPrice = items.reduce((sum, item) => sum + (item.price || 0), 0);
+  const formattedPrice = formatPrice(totalPrice);
+  const statusText = order.status || "offline";
+
+  const ownerMessage = `🛒 *New Offline Order in ${storeName}*\n\nCustomer: ${
+    order.customerName || "N/A"
+  }\nPhone: ${order.customerPhone || "N/A"}\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
+
+  const customerMessage = `✅ *Thank you for shopping at ${storeName}!*\n\nHi ${
+    order.customerName || "Customer"
+  }, Here are your ordered items.\n\nItems:\n${itemsText}\n\n*Total Price: Rs ${formattedPrice}*\nStatus: ${statusText}`;
+
+  await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, myPhone, ownerMessage);
+  if (storePhone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, storePhone, ownerMessage);
+  if (order.customerPhone) await sendWhatsApp(ultraMsgInstanceId, ultraMsgToken, order.customerPhone, customerMessage);
+});
