@@ -1,16 +1,41 @@
 // src/pages/AdminCopyProducts.jsx
-import React, { useState } from "react";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import React, { useState, useEffect } from "react";
+import {
+  collection,
+  getDocs,
+  writeBatch,
+  doc,
+} from "firebase/firestore";
 import { db } from "../firebase";
 
 const AdminCopyProducts = () => {
-  const [storeId, setStoreId] = useState("");
+  const [stores, setStores] = useState([]);
+  const [selectedStoreId, setSelectedStoreId] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  // 🔹 Fetch all stores on mount
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const storesRef = collection(db, "stores");
+        const snapshot = await getDocs(storesRef);
+        const storeList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setStores(storeList);
+      } catch (error) {
+        console.error("Error fetching stores:", error);
+      }
+    };
+
+    fetchStores();
+  }, []);
+
   const handleCopy = async () => {
-    if (!storeId.trim()) {
-      setMessage("Please enter a valid Store ID.");
+    if (!selectedStoreId) {
+      setMessage("Please select a store.");
       return;
     }
 
@@ -18,7 +43,7 @@ const AdminCopyProducts = () => {
     setMessage("");
 
     try {
-      const productsRef = collection(db, "stores", storeId, "products");
+      const productsRef = collection(db, "stores", selectedStoreId, "products");
       const defaultProductsRef = collection(db, "defaultProducts");
 
       const productsSnapshot = await getDocs(productsRef);
@@ -28,12 +53,19 @@ const AdminCopyProducts = () => {
         return;
       }
 
-      for (const productDoc of productsSnapshot.docs) {
-        const data = productDoc.data();
-        await addDoc(defaultProductsRef, data);
-      }
+      const batch = writeBatch(db);
 
-      setMessage(`Copied ${productsSnapshot.size} products from store ${storeId} to defaultProducts.`);
+      productsSnapshot.forEach((productDoc) => {
+        const data = productDoc.data();
+        const newDocRef = doc(defaultProductsRef); // new random doc id
+        batch.set(newDocRef, data);
+      });
+
+      await batch.commit();
+
+      setMessage(
+        `Copied ${productsSnapshot.size} products from store ${selectedStoreId} to defaultProducts.`
+      );
     } catch (err) {
       console.error(err);
       setMessage("Error copying products. Check console for details.");
@@ -44,15 +76,22 @@ const AdminCopyProducts = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-4">Copy Store Products to Default Products</h2>
+      <h2 className="text-2xl font-bold mb-4">
+        Copy Store Products to Default Products
+      </h2>
 
-      <input
-        type="text"
-        placeholder="Enter Store ID"
-        value={storeId}
-        onChange={(e) => setStoreId(e.target.value)}
+      <select
+        value={selectedStoreId}
+        onChange={(e) => setSelectedStoreId(e.target.value)}
         className="border p-2 rounded w-full mb-4"
-      />
+      >
+        <option value="">Select a store</option>
+        {stores.map((store) => (
+          <option key={store.id} value={store.id}>
+            {store.name || store.id}
+          </option>
+        ))}
+      </select>
 
       <button
         onClick={handleCopy}
@@ -63,12 +102,16 @@ const AdminCopyProducts = () => {
       </button>
 
       {message && (
-        <p className={`mt-4 ${message.includes("Error") ? "text-red-600" : "text-green-600"}`}>
+        <p
+          className={`mt-4 ${
+            message.includes("Error") ? "text-red-600" : "text-green-600"
+          }`}
+        >
           {message}
         </p>
       )}
     </div>
   );
 };
-  
+
 export default AdminCopyProducts;

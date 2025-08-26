@@ -41,8 +41,7 @@ const AdminPaymentVerification = () => {
     return newDate;
   };
 
-  // Approve payment request & extend subscription
-  // Approve payment request & extend subscription
+// Approve payment request & extend subscription
 const handleApprove = async (request) => {
   try {
     const storeRef = doc(db, "stores", request.id);
@@ -53,29 +52,14 @@ const handleApprove = async (request) => {
       return;
     }
 
-    const storeData = storeSnap.data();
-
-    // Decide new start date: today
     const today = new Date();
-
-    // If subscription already active and not expired, extend from current next billing date
-    let baseDate = today;
-    if (
-      storeData.subscriptionNextBilling &&
-      storeData.subscriptionNextBilling.toDate &&
-      storeData.subscriptionNextBilling.toDate() > today
-    ) {
-      baseDate = storeData.subscriptionNextBilling.toDate();
-    }
-
-    // Add 1 month to base date
-    const newNextBillingDate = addOneMonth(baseDate);
+    const newNextBillingDate = addOneMonth(today); // Always extend 1 month from today
 
     await updateDoc(storeRef, {
       subscriptionStatus: "active",
       subscriptionStart: Timestamp.fromDate(today),
       subscriptionNextBilling: Timestamp.fromDate(newNextBillingDate),
-      paymentProofUrl: null, // clear after approval
+      paymentProofUrl: null,
     });
 
     alert(
@@ -86,6 +70,7 @@ const handleApprove = async (request) => {
     alert("❌ Failed to approve payment. Check console.");
   }
 };
+
 
 
   // Reject payment request

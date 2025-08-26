@@ -187,6 +187,7 @@ function App() {
             <Route path="sales" element={<SalesPage />} />
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="settings" element={<SettingsPage storeId={storeId} />} />
+          <Route path="admin-copy-products" element={<AdminCopyProducts />} />
             <Route path="subscription" element={<SubscriptionPage storeId={storeId} />} /> {/* ✅ Added Subscription Page */}
           </Route>
 
@@ -197,7 +198,6 @@ function App() {
             element={user && !isSuperAdmin ? <StoreOwnerPayment /> : <Navigate to="/admin-login" replace />}
           />
           <Route path="/admin/add-products" element={<AddInitialProducts />} />
-          <Route path="/admin-copy-products" element={<AdminCopyProducts />} />
 
           {/* Super Admin */}
           <Route
