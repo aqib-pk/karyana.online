@@ -274,6 +274,14 @@ const ProductListing = () => {
     return `${hour}:${min} ${ampm}`;
   };
 
+  const handleScrollToCategory = (category) => {
+    const safeId = category.replace(/\s+/g, "-");
+    const element = document.getElementById(safeId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   if (loadingProducts) return <div className="p-6">Loading products...</div>;
 
   return (
