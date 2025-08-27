@@ -72,8 +72,15 @@ const ProductCard = ({ product }) => {
       ? product.image
       : `/default-images/${product.category?.toLowerCase() || "default"}.jpg`;
 
+       const isOutOfStock = !product.inventory || product.inventory <= 0;
+
   return (
     <div className="bg-white rounded-2xl shadow hover:shadow-lg transition duration-300 w-full max-w-xs">
+      {isOutOfStock && (
+        <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+          Out of Stock
+        </div>
+      )}
       <img
         src={imageUrl}
         alt={product.name?.[language] || product.name}
@@ -121,7 +128,7 @@ const ProductCard = ({ product }) => {
         <p className="text-xl font-bold text-green-600 mb-3">
           PKR {calculatedPrice}
         </p>
-
+            
         <button
           onClick={handleAddToCart}
           disabled={totalGrams === 0}

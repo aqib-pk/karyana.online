@@ -7,6 +7,8 @@ import {
   doc,
   getDoc,
   serverTimestamp,
+  updateDoc,
+  increment,
 } from "firebase/firestore";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext"; // ✅ to get currentUser
@@ -132,6 +134,18 @@ const Checkout = ({ onClose, storeId: propStoreId }) => {
 
       // 2️⃣ Save to top-level orders (for customer "My Orders" page)
       await addDoc(collection(db, "orders"), topLevelOrderData);
+
+      // 3️⃣ Update inventory for each product
+      for (const item of cartItems) {
+        try {
+          const productRef = doc(db, "stores", storeId, "products", item.id);
+          await updateDoc(productRef, {
+            inventory: increment(-item.weightKg),
+          });
+        } catch (err) {
+          console.error(`Failed to update inventory for ${item.name}`, err);
+        }
+      }
 
       setShowSuccess(true);
       clearCart();

@@ -16,13 +16,14 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 const ProductsPage = () => {
   const [storeId, setStoreId] = useState(null);
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]); // 🔹 dynamic categories
+  const [categories, setCategories] = useState([]);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
     weight: "",
     price: "",
     category: "",
+    inventory: 0, // 🔹 NEW FIELD
     imageFile: null,
   });
 
@@ -32,6 +33,7 @@ const ProductsPage = () => {
     weight: "",
     price: "",
     category: "",
+    inventory: 0, // 🔹 NEW FIELD
     imageFile: null,
     imageUrl: "",
   });
@@ -136,7 +138,7 @@ const ProductsPage = () => {
       return;
     }
 
-    const { name, weight, price, category, imageFile } = newProduct;
+    const { name, weight, price, category, inventory, imageFile } = newProduct;
 
     if (!name || !weight || !price || !category) {
       alert("Please fill in all fields including category");
@@ -150,6 +152,7 @@ const ProductsPage = () => {
         weight,
         price: Number(price),
         category,
+        inventory: Number(inventory), // 🔹 NEW FIELD
         imageUrl: "",
       });
 
@@ -174,6 +177,7 @@ const ProductsPage = () => {
           weight,
           price: Number(price),
           category,
+          inventory: Number(inventory), // 🔹 NEW
           imageUrl,
         },
       ]);
@@ -183,6 +187,7 @@ const ProductsPage = () => {
         weight: "",
         price: "",
         category: "",
+        inventory: 0, // reset
         imageFile: null,
       });
     } catch (err) {
@@ -199,6 +204,7 @@ const ProductsPage = () => {
       weight: product.weight,
       price: product.price,
       category: product.category,
+      inventory: product.inventory ?? 0, // 🔹 NEW
       imageFile: null,
       imageUrl: product.imageUrl || "",
     });
@@ -211,6 +217,7 @@ const ProductsPage = () => {
       weight: "",
       price: "",
       category: "",
+      inventory: 0,
       imageFile: null,
       imageUrl: "",
     });
@@ -226,7 +233,8 @@ const ProductsPage = () => {
       return;
     }
 
-    const { name, weight, price, category, imageFile, imageUrl } = editFormData;
+    const { name, weight, price, category, inventory, imageFile, imageUrl } =
+      editFormData;
 
     if (!name || !weight || !price || !category) {
       alert("Please fill in all fields including category");
@@ -245,6 +253,7 @@ const ProductsPage = () => {
         weight,
         price: Number(price),
         category,
+        inventory: Number(inventory), // 🔹 NEW
         imageUrl: updatedImageUrl,
       });
 
@@ -257,6 +266,7 @@ const ProductsPage = () => {
                 weight,
                 price: Number(price),
                 category,
+                inventory: Number(inventory),
                 imageUrl: updatedImageUrl,
               }
             : p
@@ -319,7 +329,7 @@ const ProductsPage = () => {
       {/* Add New Product Form */}
       <form
         onSubmit={handleAddProduct}
-        className="flex flex-wrap gap-4 items-end border p-4 rounded-lg bg-gray-50"
+        className="flex flex-wrap gap-4 items-end border p-4 rounded-lg bg-gray-50 block-on-mobile"
       >
         <input
           type="text"
@@ -345,6 +355,15 @@ const ProductsPage = () => {
           value={newProduct.price}
           onChange={(e) =>
             setNewProduct({ ...newProduct, price: e.target.value })
+          }
+          className="border p-2 rounded w-40"
+        />
+        <input
+          type="number"
+          placeholder="Inventory"
+          value={newProduct.inventory}
+          onChange={(e) =>
+            setNewProduct({ ...newProduct, inventory: e.target.value })
           }
           className="border p-2 rounded w-40"
         />
@@ -377,167 +396,237 @@ const ProductsPage = () => {
           className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex"
         >
           <svg
-  width="24"
-  height="24"
-  viewBox="0 0 24 24"
-  fill="none"
-  xmlns="http://www.w3.org/2000/svg"
-  stroke="white"
-  strokeWidth="2"
-  strokeLinecap="round"
-  strokeLinejoin="round"
->
-  <line x1="12" y1="5" x2="12" y2="19" />
-  <line x1="5" y1="12" x2="19" y2="12" />
-</svg>Add Product
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Product
         </button>
       </form>
 
       {/* Product Table */}
       {products.length === 0 ? (
-        <p>No products found.</p>
-      ) : (
-        <table className="w-full border">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2 text-left">Image</th>
-              <th className="p-2 text-left">Name</th>
-              <th className="p-2 text-left">Weight</th>
-              <th className="p-2 text-left">Price (Rs)</th>
-              <th className="p-2 text-left">Category</th>
-              <th className="p-2 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((prod) => {
-              const selectedCategory = categories.find(
-                (c) => c.name === prod.category
-              );
-              const imgSrc =
-                prod.imageUrl && prod.imageUrl !== ""
-                  ? prod.imageUrl
-                  : selectedCategory?.imageUrl || "/default-images/default.jpg";
+  <p>No products found.</p>
+) : (
+  <div className="overflow-x-auto md:overflow-x-visible">
+    <table className="w-full border text-sm md:text-base">
+      <thead className="hidden md:table-header-group">
+        <tr className="bg-gray-100">
+          <th className="p-2 text-left">Image</th>
+          <th className="p-2 text-left">Name</th>
+          <th className="p-2 text-left">Weight</th>
+          <th className="p-2 text-left">Price (Rs)</th>
+          <th className="p-2 text-left">Inventory</th>
+          <th className="p-2 text-left">Category</th>
+          <th className="p-2 text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {products.map((prod) => {
+          const selectedCategory = categories.find(
+            (c) => c.name === prod.category
+          );
+          const imgSrc =
+            prod.imageUrl && prod.imageUrl !== ""
+              ? prod.imageUrl
+              : selectedCategory?.imageUrl || "/default-images/default.jpg";
 
-              return editingProductId === prod.id ? (
-                <tr key={prod.id} className="border-t">
-                  <td className="p-2">
-                    <img
-                      src={
-                        editFormData.imageFile
-                          ? URL.createObjectURL(editFormData.imageFile)
-                          : imgSrc
-                      }
-                      alt={editFormData.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        handleEditChange("imageFile", e.target.files[0])
-                      }
-                      className="mt-2"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="text"
-                      value={editFormData.name}
-                      onChange={(e) => handleEditChange("name", e.target.value)}
-                      className="border rounded px-2 py-1 w-full"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="text"
-                      value={editFormData.weight}
-                      onChange={(e) =>
-                        handleEditChange("weight", e.target.value)
-                      }
-                      className="border rounded px-2 py-1 w-full"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={editFormData.price}
-                      onChange={(e) => handleEditChange("price", e.target.value)}
-                      className="border rounded px-2 py-1 w-24"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <select
-                      value={editFormData.category}
-                      onChange={(e) =>
-                        handleEditChange("category", e.target.value)
-                      }
-                      className="border rounded px-2 py-1 w-full"
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="p-2 flex gap-2 justify-center">
-                    <button
-                      onClick={() => saveEdit(prod.id)}
-                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
-                    >
-                      Cancel
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={prod.id} className="border-t">
-                  <td className="p-2">
-                    <img
-                      src={imgSrc}
-                      alt={prod.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  </td>
-                  <td className="p-2">{prod.name}</td>
-                  <td className="p-2">{prod.weight}</td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={prod.price}
-                      onChange={(e) =>
-                        handlePriceChange(prod.id, e.target.value)
-                      }
-                      className="border rounded px-2 py-1 w-24"
-                    />
-                  </td>
-                  <td className="p-2">{prod.category}</td>
-                  <td className="p-2 flex gap-2 justify-center mt-4">
-                    <button
-                      onClick={() => startEditing(prod)}
-                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(prod.id)}
-                      className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+          return editingProductId === prod.id ? (
+            // EDIT MODE
+            <tr
+              key={prod.id}
+              className="border-t block md:table-row md:border-0 md:mb-0 mb-4"
+            >
+              {/* Image */}
+              <td className="p-2 block md:table-cell">
+                <span className="md:hidden font-semibold">Image: </span>
+                <img
+                  src={
+                    editFormData.imageFile
+                      ? URL.createObjectURL(editFormData.imageFile)
+                      : imgSrc
+                  }
+                  alt={editFormData.name}
+                  className="w-16 h-16 object-cover rounded mb-2"
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    handleEditChange("imageFile", e.target.files[0])
+                  }
+                  className="mt-1 block"
+                />
+              </td>
+
+              {/* Name */}
+              <td className="p-2 block md:table-cell">
+                <span className="md:hidden font-semibold">Name: </span>
+                <input
+                  type="text"
+                  value={editFormData.name}
+                  onChange={(e) => handleEditChange("name", e.target.value)}
+                  className="border rounded px-2 py-1 w-full"
+                />
+              </td>
+
+              {/* Weight */}
+              <td className="p-2 block md:table-cell">
+                <span className="md:hidden font-semibold">Weight: </span>
+                <input
+                  type="text"
+                  value={editFormData.weight}
+                  onChange={(e) => handleEditChange("weight", e.target.value)}
+                  className="border rounded px-2 py-1 w-full"
+                />
+              </td>
+
+              {/* Price */}
+              <td className="p-2 block md:table-cell">
+                <span className="md:hidden font-semibold">Price: </span>
+                <input
+                  type="number"
+                  value={editFormData.price}
+                  onChange={(e) => handleEditChange("price", e.target.value)}
+                  className="border rounded px-2 py-1 w-24"
+                />
+              </td>
+
+              {/* Inventory */}
+              <td className="p-2 block md:table-cell">
+                <span className="md:hidden font-semibold">Inventory: </span>
+                <input
+                  type="number"
+                  value={editFormData.inventory}
+                  onChange={(e) =>
+                    handleEditChange("inventory", e.target.value)
+                  }
+                  className="border rounded px-2 py-1 w-24"
+                />
+              </td>
+
+              {/* Category */}
+              <td className="p-2 block md:table-cell">
+                <span className="md:hidden font-semibold">Category: </span>
+                <select
+                  value={editFormData.category}
+                  onChange={(e) =>
+                    handleEditChange("category", e.target.value)
+                  }
+                  className="border rounded px-2 py-1 w-full"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </td>
+
+              {/* Actions */}
+              <td className="p-2 flex gap-2 justify-center md:table-cell">
+                <button
+                  onClick={() => saveEdit(prod.id)}
+                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={cancelEditing}
+                  className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+              </td>
+            </tr>
+          ) : (
+            // VIEW MODE
+            <tr
+              key={prod.id}
+              className="border-t block md:table-row md:border-0 md:mb-0 mb-4"
+            >
+              {/* Image */}
+              <td className="p-2 flex items-center gap-2 md:table-cell">
+                <img
+                  src={imgSrc}
+                  alt={prod.name}
+                  className="w-16 h-16 object-cover rounded"
+                />
+                {/* Show label only on mobile */}
+                <span className="font-semibold md:hidden">{prod.name}</span>
+              </td>
+
+              {/* Name */}
+              <td className="p-2 block md:table-cell md:whitespace-nowrap">
+                <span className="md:hidden font-semibold">Name: </span>
+                {prod.name}
+              </td>
+
+              {/* Weight */}
+              <td className="p-2 block md:table-cell md:whitespace-nowrap">
+                <span className="md:hidden font-semibold">Weight: </span>
+                {prod.weight}
+              </td>
+
+              {/* Price */}
+              <td className="p-2 block md:table-cell md:whitespace-nowrap">
+                <span className="md:hidden font-semibold">Price: </span>
+                <input
+                  type="number"
+                  value={prod.price}
+                  onChange={(e) =>
+                    handlePriceChange(prod.id, e.target.value)
+                  }
+                  className="border rounded px-2 py-1 w-24"
+                />
+              </td>
+
+              {/* Inventory */}
+              <td className="p-2 block md:table-cell md:whitespace-nowrap">
+                <span className="md:hidden font-semibold">Inventory: </span>
+                {prod.inventory ?? 0}
+              </td>
+
+              {/* Category */}
+              <td className="p-2 block md:table-cell md:whitespace-nowrap">
+                <span className="md:hidden font-semibold">Category: </span>
+                {prod.category}
+              </td>
+
+              {/* Actions */}
+              <td className="p-2 flex gap-2 justify-start md:justify-center md:table-cell order-first md:order-none">
+                <button
+                  onClick={() => startEditing(prod)}
+                  className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(prod.id)}
+                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+)}
+
+
     </div>
   );
 };

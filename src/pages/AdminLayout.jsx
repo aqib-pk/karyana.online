@@ -87,7 +87,7 @@ const AdminLayout = () => {
   return (
     <div className="flex min-h-screen">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:block w-64 bg-green-700 text-white p-6">
+      <aside className="hidden lg:block w-64 bg-green-700 text-white p-6">
         <h2 className="text-2xl font-bold mb-6">Admin Panel</h2>
         <nav className="space-y-4">
           <Link
@@ -139,7 +139,7 @@ const AdminLayout = () => {
             <span>Offline Orders</span>
           </Link>
 
-          <Link
+          {/* <Link
             to={`/${storeSlug}/admin/admin-copy-products`}
             className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
               location.pathname === `/${storeSlug}/admin-copy-products` ? "bg-green-900" : ""
@@ -147,6 +147,16 @@ const AdminLayout = () => {
           >
             <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
             <span>Copy Products</span>
+          </Link> */}
+          
+          <Link
+            to={`/${storeSlug}/admin/sales`}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/sales` ? "bg-green-900" : ""
+            }`}
+          >
+            <ChartBarIcon className="h-5 w-5 text-white" />
+            <span>Offline Sales</span>
           </Link>
 
           <Link
@@ -168,16 +178,6 @@ const AdminLayout = () => {
           >
             <CreditCardIcon className="h-5 w-5 text-white" />
             <span>Subscription</span>
-          </Link>
-
-          <Link
-            to={`/${storeSlug}/admin/sales`}
-            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
-              location.pathname === `/${storeSlug}/admin/sales` ? "bg-green-900" : ""
-            }`}
-          >
-            <ChartBarIcon className="h-5 w-5 text-white" />
-            <span>Offline Sales</span>
           </Link>
 
           <Link
@@ -203,7 +203,7 @@ const AdminLayout = () => {
 
       {/* Sidebar - Mobile */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-green-700 text-white p-6 transform transition-transform duration-300 md:hidden h-full overflow-y-auto ${
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-green-700 text-white p-6 transform transition-transform duration-300 lg:hidden h-full overflow-y-auto ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -214,6 +214,16 @@ const AdminLayout = () => {
           </button>
         </div>
         <nav className="space-y-4">
+          <Link
+            to={`/${storeSlug}/admin/dashboard`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/dashboard` ? "bg-green-900" : ""
+            }`}
+          >
+            <Squares2X2Icon className="h-5 w-5 text-white" />
+            <span>Dashboard</span>
+          </Link>
           <Link
             to={`/${storeSlug}/admin/orders`}
             onClick={() => setIsSidebarOpen(false)}
@@ -320,7 +330,7 @@ const AdminLayout = () => {
           {/* Hamburger - Mobile */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="md:hidden p-2"
+            className="lg:hidden p-2"
           >
             <Bars3Icon className="h-6 w-6 text-gray-700" />
           </button>

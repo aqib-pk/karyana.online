@@ -194,6 +194,44 @@ const OfflineOrdersPage = () => {
   return (
     <div className="p-6">
       {/* Customer info & payment */}
+      {/* Cart */}
+      <div className="w-80 fixed top-20 right-5 bg-white shadow-lg rounded p-4 max-h-[80vh] overflow-auto not-fixed-on-tablet">
+        <h2 className="text-xl font-semibold mb-4">Order Items</h2>
+        {selectedItems.length === 0 && <p>No items selected.</p>}
+        {selectedItems.map((item) => (
+          <div
+            key={item.id}
+            className="flex justify-between items-center mb-3 border-b border-gray-200 pb-2"
+          >
+            <div>
+              <div className="font-semibold">{item.name}</div>
+              <div className="text-sm text-gray-600">{item.weight}</div>
+            </div>
+            <div className="text-green-600 font-bold">PKR {item.price}</div>
+            <button
+              onClick={() => removeItem(item.id)}
+              className="text-red-500 ml-2"
+              title="Remove item"
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+        {selectedItems.length > 0 && (
+          <>
+            <div className="mt-2 pt-2 font-bold flex justify-between text-lg">
+              <span>Total:</span>
+              <span>PKR {calculateTotalPrice()}</span>
+            </div>
+            <button
+              onClick={handlePrint}
+              className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+            >
+              Print Bill
+            </button>
+          </>
+        )}
+      </div>
       <div className="mt-6 max-w-md offline-info">
         <label className="block mb-1 font-semibold">Customer Name (optional)</label>
         <input
@@ -253,7 +291,7 @@ const OfflineOrdersPage = () => {
               <h3 className="text-xl font-bold mb-4 border-b border-gray-300 pb-1">
                 {category}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {groupedProducts[category].map((product) => {
                   const imageUrl =
                     product.imageUrl && product.imageUrl.trim() !== ""
@@ -330,44 +368,6 @@ const OfflineOrdersPage = () => {
         </div>
       </div>
 
-      {/* Cart */}
-      <div className="w-80 fixed top-20 right-5 bg-white shadow-lg rounded p-4 max-h-[80vh] overflow-auto">
-        <h2 className="text-xl font-semibold mb-4">Order Items</h2>
-        {selectedItems.length === 0 && <p>No items selected.</p>}
-        {selectedItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex justify-between items-center mb-3 border-b border-gray-200 pb-2"
-          >
-            <div>
-              <div className="font-semibold">{item.name}</div>
-              <div className="text-sm text-gray-600">{item.weight}</div>
-            </div>
-            <div className="text-green-600 font-bold">PKR {item.price}</div>
-            <button
-              onClick={() => removeItem(item.id)}
-              className="text-red-500 ml-2"
-              title="Remove item"
-            >
-              &times;
-            </button>
-          </div>
-        ))}
-        {selectedItems.length > 0 && (
-          <>
-            <div className="mt-2 pt-2 font-bold flex justify-between text-lg">
-              <span>Total:</span>
-              <span>PKR {calculateTotalPrice()}</span>
-            </div>
-            <button
-              onClick={handlePrint}
-              className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-            >
-              Print Bill
-            </button>
-          </>
-        )}
-      </div>
 
       {/* Print area */}
       <div id="printArea" style={{ display: "none" }}>

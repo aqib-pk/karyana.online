@@ -44,49 +44,70 @@ export const CartProvider = ({ children }) => {
   }, [cartItems]);
 
   const addToCart = (product) => {
-    const addedWeightKg = convertToKg(product.weight);
-    const pricePerKg = product.basePrice || product.price;
+  // ✅ Check inventory before adding
+  if (!product.inventory || product.inventory <= 0) {
+    alert(`${product.name} is out of stock!`);
+    return;
+  }
 
-    setCartItems((prev) => {
-      const existingIndex = prev.findIndex((item) => item.id === product.id);
+  const addedWeightKg = convertToKg(product.weight);
+  const pricePerKg = product.basePrice || product.price;
 
-      if (existingIndex !== -1) {
-        const updatedItems = [...prev];
-        const existing = updatedItems[existingIndex];
+  setCartItems((prev) => {
+    const existingIndex = prev.findIndex((item) => item.id === product.id);
 
-        const newWeightKg = existing.weightKg + addedWeightKg;
-        const newWeightStr = formatWeight(newWeightKg);
-        const newPrice = Math.round(pricePerKg * newWeightKg);
+    if (existingIndex !== -1) {
+      const updatedItems = [...prev];
+      const existing = updatedItems[existingIndex];
 
-        updatedItems[existingIndex] = {
-          ...existing,
-          quantity: existing.quantity + 1,
-          weightKg: newWeightKg,
-          weight: newWeightStr,
-          price: newPrice, // total price based on total weight
-        };
+      const newWeightKg = existing.weightKg + addedWeightKg;
 
-        return updatedItems;
+      // ✅ Prevent adding more than available inventory
+      if (newWeightKg > product.inventory) {
+        alert(`Only ${product.inventory}kg of ${product.name} is available!`);
+        return prev;
       }
 
-      // New item case
-      const unitPrice = Math.round(pricePerKg * addedWeightKg);
-      const newItem = {
-        id: product.id,
-        name: product.name,
-        image: product.image,
-        quantity: 1,
-        weightKg: addedWeightKg,
-        weight: formatWeight(addedWeightKg),
-        pricePerKg,
-        price: unitPrice,
+      const newWeightStr = formatWeight(newWeightKg);
+      const newPrice = Math.round(pricePerKg * newWeightKg);
+
+      updatedItems[existingIndex] = {
+        ...existing,
+        quantity: existing.quantity + 1,
+        weightKg: newWeightKg,
+        weight: newWeightStr,
+        price: newPrice,
       };
 
-      return [...prev, newItem];
-    });
+      return updatedItems;
+    }
 
-    setIsCartOpen(true);
-  };
+    // New item case
+    const unitPrice = Math.round(pricePerKg * addedWeightKg);
+
+    // ✅ If user tries to add more than available inventory
+    if (addedWeightKg > product.inventory) {
+      alert(`Only ${product.inventory}kg of ${product.name} is available!`);
+      return prev;
+    }
+
+    const newItem = {
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      quantity: 1,
+      weightKg: addedWeightKg,
+      weight: formatWeight(addedWeightKg),
+      pricePerKg,
+      price: unitPrice,
+    };
+
+    return [...prev, newItem];
+  });
+
+  setIsCartOpen(true);
+};
+
 
   const removeFromCart = (id, weight) => {
     setCartItems((prev) =>

@@ -92,7 +92,7 @@ const CategoriesPage = () => {
       {/* Add category form */}
       <form
         onSubmit={handleAddCategory}
-        className="mb-6 flex flex-col sm:flex-row gap-4"
+        className="mb-6 flex flex-col lg:flex-row gap-4"
       >
         <input
           type="text"
@@ -110,7 +110,7 @@ const CategoriesPage = () => {
         <button
           type="submit"
           disabled={loading}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
+          className="w-fit bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
         >
           {loading ? "Adding..." : "Add Category"}
         </button>

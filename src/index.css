@@ -114,6 +114,24 @@ select {
     .banner-section.md\:h-80 {
         height: 15rem;
     }
+    .offline-info {
+        margin-top: 0 !important;
+    }
+    .admin-content .p-6 {
+        padding: 0.5rem;
+    }
+    .admin-content .bg-white.rounded-lg.shadow.p-6.max-w-xl.mx-auto {
+        max-width: 100%;
+        padding: 30px;
+    }
+    .not-fixed-on-tablet {
+        position: static;
+        width: 100%;
+        margin-bottom: 40px;
+    }
+    .offline-info {
+        max-width: 100%;
+    }
 }
 
 @media only screen and (max-width:767px) {
@@ -174,6 +192,10 @@ select {
     .h-48 {
         height: 7rem;
     }
+    .grid-cols-2 {
+        width: 100%;
+        grid-template-columns:repeat(1, minmax(0, 1fr));
+    }
 }
 
 
@@ -202,4 +224,13 @@ select {
 .bg-white.rounded-2xl.shadow.hover\:shadow-lg.transition.duration-300.w-full.max-w-xs >img {
     height: 200px;
     object-fit: cover;
+}
+
+.grid > div {
+    position: relative;
+}
+
+
+.w-fit {
+    width: fit-content;
 }
