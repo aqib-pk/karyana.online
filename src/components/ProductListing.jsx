@@ -36,34 +36,71 @@ const ProductCard = ({ product }) => {
   const { language } = useLanguage();
   const t = translations[language];
   const { addToCart } = useCart();
+
+  // Weight/Volume state
   const [selectedKg, setSelectedKg] = useState(1);
   const [selectedGram, setSelectedGram] = useState(0);
+  const [selectedLiters, setSelectedLiters] = useState(1);
+  const [selectedMl, setSelectedMl] = useState(0);
 
-  const totalGrams = selectedKg * 1000 + selectedGram;
+  // Quantity state (for pieces & dozens)
+  const [selectedQty, setSelectedQty] = useState(1);
 
-  const calculatedPrice = totalGrams
-    ? Math.round((product.price / 1000) * Number(totalGrams))
-    : 0;
+  let calculatedPrice = 0;
+  let displayWeight = "";
 
-  const handleAddToCart = () => {
-    if (totalGrams === 0) {
-      alert("Please select a valid weight greater than 0");
-      return;
-    }
+  if (product.unit === "Kg") {
+    const totalGrams = selectedKg * 1000 + selectedGram;
+    calculatedPrice = totalGrams
+      ? Math.round((product.price / 1000) * Number(totalGrams))
+      : 0;
+    displayWeight = `${selectedKg}kg${selectedGram > 0 ? ` + ${selectedGram}g` : ""}`;
+  } else if (product.unit === "Liters") {
+    const totalMl = selectedLiters * 1000 + selectedMl;
+    calculatedPrice = totalMl
+      ? Math.round((product.price / 1000) * Number(totalMl))
+      : 0;
+    displayWeight = `${selectedLiters}L${selectedMl > 0 ? ` + ${selectedMl}ml` : ""}`;
+  } else if (product.unit === "Pieces") {
+    calculatedPrice = product.price * selectedQty;
+    displayWeight = `${selectedQty} Piece${selectedQty > 1 ? "s" : ""}`;
+  } else if (product.unit === "Dozens") {
+    calculatedPrice = product.price * selectedQty; // price stored per dozen in DB
+    displayWeight = `${selectedQty} Dozen${selectedQty > 1 ? "s" : ""}`;
+  }
 
-    addToCart({
-      ...product,
-      name: {
-        en: product.name?.[language] || product.name,
-        ur: product.name?.[language] || product.name,
-      },
-      subcategory: product.subcategory?.[language] || "",
-      price: calculatedPrice,
-      basePrice: product.price,
-      quantity: 1,
-      weight: `${selectedKg}kg${selectedGram > 0 ? ` + ${selectedGram}g` : ""}`,
-    });
-  };
+    // inside ProductCard
+
+const handleAddToCart = () => {
+  if (calculatedPrice === 0) {
+    alert("Please select a valid quantity");
+    return;
+  }
+
+  let finalQuantity = 1;
+
+  if (product.unit === "Kg") {
+    finalQuantity = (selectedKg * 1000 + selectedGram) / 1000; // convert to kg
+  } else if (product.unit === "Liters") {
+    finalQuantity = (selectedLiters * 1000 + selectedMl) / 1000; // convert to L
+  } else if (product.unit === "Pieces" || product.unit === "Dozens") {
+    finalQuantity = selectedQty;
+  }
+
+  addToCart({
+    ...product,
+    name: {
+      en: product.name?.[language] || product.name,
+      ur: product.name?.[language] || product.name,
+    },
+    subcategory: product.subcategory?.[language] || "",
+    price: calculatedPrice,   // ✅ total price
+    basePrice: product.price, // ✅ per unit base price
+    quantity: finalQuantity,  // ✅ now correct for Kg, L, Pieces, Dozens
+    weight: displayWeight,    // readable string
+  });
+};
+
 
   const imageUrl =
     product.imageUrl && product.imageUrl.trim() !== ""
@@ -72,10 +109,10 @@ const ProductCard = ({ product }) => {
       ? product.image
       : `/default-images/${product.category?.toLowerCase() || "default"}.jpg`;
 
-       const isOutOfStock = !product.inventory || product.inventory <= 0;
+  const isOutOfStock = !product.inventory || product.inventory <= 0;
 
   return (
-    <div className="bg-white rounded-2xl shadow hover:shadow-lg transition duration-300 w-full max-w-xs">
+    <div className="bg-white rounded-2xl shadow hover:shadow-lg transition duration-300 w-full max-w-xs relative">
       {isOutOfStock && (
         <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
           Out of Stock
@@ -97,43 +134,101 @@ const ProductCard = ({ product }) => {
           {product.subcategory?.[language] || ""}
         </p>
 
-        <div className="flex gap-2 mb-2">
-          <select
-            value={selectedKg}
-            onChange={(e) => setSelectedKg(Number(e.target.value))}
-            className="p-1 border rounded-md text-sm w-full"
-          >
-            {Array.from({ length: 21 }, (_, i) => (
-              <option key={i} value={i}>
-                {i} kg
-              </option>
-            ))}
-          </select>
+        {/* Dynamic dropdowns based on unit */}
+        {product.unit === "Kg" && (
+  <div className="flex gap-2 mb-2">
+    <select
+      value={selectedKg}
+      onChange={(e) => setSelectedKg(Number(e.target.value))}
+      className="p-1 border rounded-md text-sm w-full"
+    >
+      {Array.from({ length: 21 }, (_, i) => (
+        <option key={i} value={i}>
+          {i} kg
+        </option>
+      ))}
+    </select>
 
-          <select
-            value={selectedGram}
-            onChange={(e) => setSelectedGram(Number(e.target.value))}
-            className="p-1 border rounded-md text-sm w-full"
-          >
-            {[0, 100, 150, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map(
-              (g) => (
-                <option key={g} value={g}>
-                  {g} g
-                </option>
-              )
-            )}
-          </select>
-        </div>
+    <select
+      value={selectedGram}
+      onChange={(e) => setSelectedGram(Number(e.target.value))}
+      className="p-1 border rounded-md text-sm w-full"
+    >
+      {/* ✅ Only these gram options */}
+      {[0, 100, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map((g) => (
+        <option key={g} value={g}>
+          {g} g
+        </option>
+      ))}
+    </select>
+  </div>
+)}
 
+{product.unit === "Liters" && (
+  <div className="flex gap-2 mb-2">
+    <select
+      value={selectedLiters}
+      onChange={(e) => setSelectedLiters(Number(e.target.value))}
+      className="p-1 border rounded-md text-sm w-full"
+    >
+      {Array.from({ length: 11 }, (_, i) => (
+        <option key={i} value={i}>
+          {i} L
+        </option>
+      ))}
+    </select>
+
+    <select
+      value={selectedMl}
+      onChange={(e) => setSelectedMl(Number(e.target.value))}
+      className="p-1 border rounded-md text-sm w-full"
+    >
+      {/* ✅ Dairy restriction */}
+      {product.category === "Dairy"
+        ? [0, 250, 500].map((ml) => (
+            <option key={ml} value={ml}>
+              {ml} ml
+            </option>
+          ))
+        : [0, 100, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map((ml) => (
+            <option key={ml} value={ml}>
+              {ml} ml
+            </option>
+          ))}
+    </select>
+  </div>
+)}
+
+
+        {(product.unit === "Pieces" || product.unit === "Dozens") && (
+          <div className="mb-2">
+            <select
+              value={selectedQty}
+              onChange={(e) => setSelectedQty(Number(e.target.value))}
+              className="p-1 border rounded-md text-sm w-full"
+            >
+              {Array.from({ length: 200 }, (_, i) => {
+  const qty = i + 1;
+  return (
+    <option key={qty} value={qty}>
+      {qty} {product.unit}
+    </option>
+  );
+})}
+            </select>
+          </div>
+        )}
+
+  
         <p className="text-xl font-bold text-green-600 mb-3">
           PKR {calculatedPrice}
         </p>
-            
+
         <button
           onClick={handleAddToCart}
-          disabled={totalGrams === 0}
+          disabled={isOutOfStock || calculatedPrice === 0}
           className={`w-full py-2 rounded-md font-medium text-white ${
-            totalGrams === 0
+            isOutOfStock || calculatedPrice === 0
               ? "bg-gray-400 cursor-not-allowed"
               : "bg-green-500 hover:bg-green-600"
           }`}
@@ -144,6 +239,9 @@ const ProductCard = ({ product }) => {
     </div>
   );
 };
+
+
+
 
 // --- ProductListing ---
 const formatPhoneForWhatsapp = (phone) => {

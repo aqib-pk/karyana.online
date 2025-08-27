@@ -23,7 +23,8 @@ const ProductsPage = () => {
     weight: "",
     price: "",
     category: "",
-    inventory: 0, // 🔹 NEW FIELD
+    unit: "Kg", // 🔹 NEW FIELD
+    inventory: 0,
     imageFile: null,
   });
 
@@ -33,7 +34,8 @@ const ProductsPage = () => {
     weight: "",
     price: "",
     category: "",
-    inventory: 0, // 🔹 NEW FIELD
+    unit: "Kg", // 🔹 NEW FIELD
+    inventory: 0,
     imageFile: null,
     imageUrl: "",
   });
@@ -138,7 +140,8 @@ const ProductsPage = () => {
       return;
     }
 
-    const { name, weight, price, category, inventory, imageFile } = newProduct;
+    const { name, weight, price, category, unit, inventory, imageFile } =
+      newProduct;
 
     if (!name || !weight || !price || !category) {
       alert("Please fill in all fields including category");
@@ -152,7 +155,8 @@ const ProductsPage = () => {
         weight,
         price: Number(price),
         category,
-        inventory: Number(inventory), // 🔹 NEW FIELD
+        unit,
+        inventory: Number(inventory),
         imageUrl: "",
       });
 
@@ -177,7 +181,8 @@ const ProductsPage = () => {
           weight,
           price: Number(price),
           category,
-          inventory: Number(inventory), // 🔹 NEW
+          unit,
+          inventory: Number(inventory),
           imageUrl,
         },
       ]);
@@ -187,7 +192,8 @@ const ProductsPage = () => {
         weight: "",
         price: "",
         category: "",
-        inventory: 0, // reset
+        unit: "Kg",
+        inventory: 0,
         imageFile: null,
       });
     } catch (err) {
@@ -204,7 +210,8 @@ const ProductsPage = () => {
       weight: product.weight,
       price: product.price,
       category: product.category,
-      inventory: product.inventory ?? 0, // 🔹 NEW
+      unit: product.unit ?? "Kg",
+      inventory: product.inventory ?? 0,
       imageFile: null,
       imageUrl: product.imageUrl || "",
     });
@@ -217,6 +224,7 @@ const ProductsPage = () => {
       weight: "",
       price: "",
       category: "",
+      unit: "Kg",
       inventory: 0,
       imageFile: null,
       imageUrl: "",
@@ -233,7 +241,7 @@ const ProductsPage = () => {
       return;
     }
 
-    const { name, weight, price, category, inventory, imageFile, imageUrl } =
+    const { name, weight, price, category, unit, inventory, imageFile, imageUrl } =
       editFormData;
 
     if (!name || !weight || !price || !category) {
@@ -253,7 +261,8 @@ const ProductsPage = () => {
         weight,
         price: Number(price),
         category,
-        inventory: Number(inventory), // 🔹 NEW
+        unit,
+        inventory: Number(inventory),
         imageUrl: updatedImageUrl,
       });
 
@@ -266,6 +275,7 @@ const ProductsPage = () => {
                 weight,
                 price: Number(price),
                 category,
+                unit,
                 inventory: Number(inventory),
                 imageUrl: updatedImageUrl,
               }
@@ -349,6 +359,16 @@ const ProductsPage = () => {
           }
           className="border p-2 rounded w-40"
         />
+        <select
+          value={newProduct.unit}
+          onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+          className="border p-2 rounded w-40"
+        >
+          <option value="Kg">Kg</option>
+          <option value="Liters">Liters</option>
+          <option value="Dozens">Dozens</option>
+          <option value="Pieces">Pieces</option>
+        </select>
         <input
           type="number"
           placeholder="Price (Rs)"
@@ -415,142 +435,158 @@ const ProductsPage = () => {
 
       {/* Product Table */}
       {products.length === 0 ? (
-  <p>No products found.</p>
-) : (
-  <div className="overflow-x-auto md:overflow-x-visible">
-    <table className="w-full border text-sm md:text-base">
-      <thead className="hidden md:table-header-group">
-        <tr className="bg-gray-100">
-          <th className="p-2 text-left">Image</th>
-          <th className="p-2 text-left">Name</th>
-          <th className="p-2 text-left">Weight</th>
-          <th className="p-2 text-left">Price (Rs)</th>
-          <th className="p-2 text-left">Inventory</th>
-          <th className="p-2 text-left">Category</th>
-          <th className="p-2 text-center">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {products.map((prod) => {
-          const selectedCategory = categories.find(
-            (c) => c.name === prod.category
-          );
-          const imgSrc =
-            prod.imageUrl && prod.imageUrl !== ""
-              ? prod.imageUrl
-              : selectedCategory?.imageUrl || "/default-images/default.jpg";
+        <p>No products found.</p>
+      ) : (
+        <div className="overflow-x-auto md:overflow-x-visible">
+          <table className="w-full border text-sm md:text-base">
+            <thead className="hidden md:table-header-group">
+              <tr className="bg-gray-100">
+                <th className="p-2 text-left">Image</th>
+                <th className="p-2 text-left">Name</th>
+                <th className="p-2 text-left">Weight</th>
+                <th className="p-2 text-left">Unit</th>
+                <th className="p-2 text-left">Price (Rs)</th>
+                <th className="p-2 text-left">Inventory</th>
+                <th className="p-2 text-left">Category</th>
+                <th className="p-2 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((prod) => {
+                const selectedCategory = categories.find(
+                  (c) => c.name === prod.category
+                );
+                const imgSrc =
+                  prod.imageUrl && prod.imageUrl !== ""
+                    ? prod.imageUrl
+                    : selectedCategory?.imageUrl || "/default-images/default.jpg";
 
-          return editingProductId === prod.id ? (
-            // EDIT MODE
-            <tr
-              key={prod.id}
-              className="border-t block md:table-row md:border-0 md:mb-0 mb-4"
-            >
-              {/* Image */}
-              <td className="p-2 block md:table-cell">
-                <span className="md:hidden font-semibold">Image: </span>
-                <img
-                  src={
-                    editFormData.imageFile
-                      ? URL.createObjectURL(editFormData.imageFile)
-                      : imgSrc
-                  }
-                  alt={editFormData.name}
-                  className="w-16 h-16 object-cover rounded mb-2"
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleEditChange("imageFile", e.target.files[0])
-                  }
-                  className="mt-1 block"
-                />
-              </td>
+                return editingProductId === prod.id ? (
+                  // EDIT MODE
+                  <tr
+                    key={prod.id}
+                    className="border-t block md:table-row md:border-0 md:mb-0 mb-4"
+                  >
+                    {/* Image */}
+                    <td className="p-2 block md:table-cell">
+                      <span className="md:hidden font-semibold">Image: </span>
+                      <img
+                        src={
+                          editFormData.imageFile
+                            ? URL.createObjectURL(editFormData.imageFile)
+                            : imgSrc
+                        }
+                        alt={editFormData.name}
+                        className="w-16 h-16 object-cover rounded mb-2"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          handleEditChange("imageFile", e.target.files[0])
+                        }
+                        className="mt-1 block"
+                      />
+                    </td>
 
-              {/* Name */}
-              <td className="p-2 block md:table-cell">
-                <span className="md:hidden font-semibold">Name: </span>
-                <input
-                  type="text"
-                  value={editFormData.name}
-                  onChange={(e) => handleEditChange("name", e.target.value)}
-                  className="border rounded px-2 py-1 w-full"
-                />
-              </td>
+                    {/* Name */}
+                    <td className="p-2 block md:table-cell">
+                      <span className="md:hidden font-semibold">Name: </span>
+                      <input
+                        type="text"
+                        value={editFormData.name}
+                        onChange={(e) => handleEditChange("name", e.target.value)}
+                        className="border rounded px-2 py-1 w-full"
+                      />
+                    </td>
 
-              {/* Weight */}
-              <td className="p-2 block md:table-cell">
-                <span className="md:hidden font-semibold">Weight: </span>
-                <input
-                  type="text"
-                  value={editFormData.weight}
-                  onChange={(e) => handleEditChange("weight", e.target.value)}
-                  className="border rounded px-2 py-1 w-full"
-                />
-              </td>
+                    {/* Weight */}
+                    <td className="p-2 block md:table-cell">
+                      <span className="md:hidden font-semibold">Weight: </span>
+                      <input
+                        type="text"
+                        value={editFormData.weight}
+                        onChange={(e) => handleEditChange("weight", e.target.value)}
+                        className="border rounded px-2 py-1 w-full"
+                      />
+                    </td>
 
-              {/* Price */}
-              <td className="p-2 block md:table-cell">
-                <span className="md:hidden font-semibold">Price: </span>
-                <input
-                  type="number"
-                  value={editFormData.price}
-                  onChange={(e) => handleEditChange("price", e.target.value)}
-                  className="border rounded px-2 py-1 w-24"
-                />
-              </td>
+                    {/* Unit */}
+                    <td className="p-2 block md:table-cell">
+                      <span className="md:hidden font-semibold">Unit: </span>
+                      <select
+                        value={editFormData.unit}
+                        onChange={(e) => handleEditChange("unit", e.target.value)}
+                        className="border rounded px-2 py-1 w-full"
+                      >
+                        <option value="Kg">Kg</option>
+                        <option value="Liters">Liters</option>
+                        <option value="Dozens">Dozens</option>
+                        <option value="Pieces">Pieces</option>
+                      </select>
+                    </td>
 
-              {/* Inventory */}
-              <td className="p-2 block md:table-cell">
-                <span className="md:hidden font-semibold">Inventory: </span>
-                <input
-                  type="number"
-                  value={editFormData.inventory}
-                  onChange={(e) =>
-                    handleEditChange("inventory", e.target.value)
-                  }
-                  className="border rounded px-2 py-1 w-24"
-                />
-              </td>
+                    {/* Price */}
+                    <td className="p-2 block md:table-cell">
+                      <span className="md:hidden font-semibold">Price: </span>
+                      <input
+                        type="number"
+                        value={editFormData.price}
+                        onChange={(e) => handleEditChange("price", e.target.value)}
+                        className="border rounded px-2 py-1 w-24"
+                      />
+                    </td>
 
-              {/* Category */}
-              <td className="p-2 block md:table-cell">
-                <span className="md:hidden font-semibold">Category: </span>
-                <select
-                  value={editFormData.category}
-                  onChange={(e) =>
-                    handleEditChange("category", e.target.value)
-                  }
-                  className="border rounded px-2 py-1 w-full"
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.name}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </td>
+                    {/* Inventory */}
+                    <td className="p-2 block md:table-cell">
+                      <span className="md:hidden font-semibold">Inventory: </span>
+                      <input
+                        type="number"
+                        value={editFormData.inventory}
+                        onChange={(e) =>
+                          handleEditChange("inventory", e.target.value)
+                        }
+                        className="border rounded px-2 py-1 w-24"
+                      />
+                    </td>
 
-              {/* Actions */}
-              <td className="p-2 flex gap-2 justify-center md:table-cell">
-                <button
-                  onClick={() => saveEdit(prod.id)}
-                  className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={cancelEditing}
-                  className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-              </td>
-            </tr>
-          ) : (
-            // VIEW MODE
+                    {/* Category */}
+                    <td className="p-2 block md:table-cell">
+                      <span className="md:hidden font-semibold">Category: </span>
+                      <select
+                        value={editFormData.category}
+                        onChange={(e) =>
+                          handleEditChange("category", e.target.value)
+                        }
+                        className="border rounded px-2 py-1 w-full"
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="p-2 flex gap-2 justify-center md:table-cell">
+                      <button
+                        onClick={() => saveEdit(prod.id)}
+                        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  // VIEW MODE
             <tr
               key={prod.id}
               className="border-t block md:table-row md:border-0 md:mb-0 mb-4"
@@ -577,7 +613,11 @@ const ProductsPage = () => {
                 <span className="md:hidden font-semibold">Weight: </span>
                 {prod.weight}
               </td>
-
+              {/* ✅ Unit (new column, fixes misalignment) */}
+  <td className="p-2 block md:table-cell md:whitespace-nowrap">
+    <span className="md:hidden font-semibold">Unit: </span>
+    {prod.unit}
+  </td>
               {/* Price */}
               <td className="p-2 block md:table-cell md:whitespace-nowrap">
                 <span className="md:hidden font-semibold">Price: </span>

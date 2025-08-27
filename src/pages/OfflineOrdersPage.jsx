@@ -128,7 +128,7 @@ const OfflineOrdersPage = () => {
     }));
   };
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
   if (!storeId) {
     alert("Store ID not found, cannot save offline order.");
     return;
@@ -137,6 +137,21 @@ const OfflineOrdersPage = () => {
     alert("Please add at least one item");
     return;
   }
+  if (!customerName.trim()) {
+    alert("Customer name is required");
+    return;
+  }
+  if (!customerPhone.trim()) {
+    alert("Customer phone is required");
+    return;
+  }
+  // Optional: enforce regex for Pakistani numbers
+  const phoneRegex = /^(\+92|0)?3\d{9}$/;
+  if (!phoneRegex.test(customerPhone)) {
+    alert("Please enter a valid Pakistani phone number (03XXXXXXXXX)");
+    return;
+  }
+
   setSubmitting(true);
 
   try {
@@ -151,7 +166,7 @@ const OfflineOrdersPage = () => {
       })),
       totalPrice: calculateTotalPrice(),
       customerName,
-      customerPhone, // ✅ save phone
+      customerPhone,
       status: "offline",
       orderType: "offline",
       paymentMethod,
@@ -161,7 +176,7 @@ const OfflineOrdersPage = () => {
     alert("Offline order created successfully!");
     setSelectedItems([]);
     setCustomerName("");
-    setCustomerPhone(""); // ✅ reset phone
+    setCustomerPhone("");
     setPaymentMethod("Cash");
 
     const resetWeights = {};
@@ -176,6 +191,7 @@ const OfflineOrdersPage = () => {
 
   setSubmitting(false);
 };
+
 
 
   const handlePrint = () => {
@@ -233,19 +249,22 @@ const OfflineOrdersPage = () => {
         )}
       </div>
       <div className="mt-6 max-w-md offline-info">
-        <label className="block mb-1 font-semibold">Customer Name (optional)</label>
+        <label className="block mb-1 font-semibold">Customer Name</label>
         <input
           type="text"
           className="border p-2 rounded w-full"
           value={customerName}
+          required
           onChange={(e) => setCustomerName(e.target.value)}
         />
 
-        <label className="block mb-1 font-semibold mt-4">Customer Phone (optional)</label>
+        <label className="block mb-1 font-semibold mt-4">Customer Phone</label>
         <input
           type="text"
           className="border p-2 rounded w-full"
           value={customerPhone}
+          pattern="^(\+92|0)?3\d{9}$"
+    
           onChange={(e) => setCustomerPhone(e.target.value)}
           placeholder="03XXXXXXXXX"
         />

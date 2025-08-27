@@ -18,10 +18,7 @@ const FloatingCart = () => {
 
   // ✅ Correct total items & price calculation
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cartItems.reduce(
-    (sum, item) => sum + item.pricePerKg * item.weightKg,
-    0
-  );
+const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
 
   const { language } = useLanguage();
   const t = translations[language];
@@ -108,30 +105,36 @@ const FloatingCart = () => {
           ) : (
             <>
               <ul className="divide-y">
-                {cartItems.map((item) => (
-                  <li
-                    key={`${item.id}-${item.weight}`}
-                    className="py-2 flex justify-between items-center text-sm"
-                  >
-                    <div className="flex flex-col">
-                      <span>
-                        {typeof item.name === "object" ? item.name[language] : item.name}
-                      </span>
-                      <span className="text-xs text-gray-500">({item.weight})</span>
-                      <span className="text-xs text-gray-600">
-                        {Math.round(item.pricePerKg * item.weightKg)} Rs
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => removeFromCart(item.id, item.weight)}
-                      className="text-red-500 hover:text-red-700 ml-2 text-sm"
-                      title="Remove Item"
-                    >
-                      ❌
-                    </button>
-                  </li>
-                ))}
-              </ul>
+  {cartItems.map((item) => (
+    <li
+      key={`${item.id}-${item.weight}`}
+      className="py-2 flex justify-between items-center text-sm"
+    >
+      <div className="flex flex-col">
+        <span>
+          {typeof item.name === "object" ? item.name[language] : item.name}
+        </span>
+
+        {/* ✅ Show selected weight/unit */}
+        <span className="text-xs text-gray-500">
+          {item.weight}
+        </span>
+
+        {/* ✅ Use already calculated price */}
+        <span className="text-xs text-gray-600">
+          {Math.round(item.price)} Rs
+        </span>
+      </div>
+      <button
+        onClick={() => removeFromCart(item.id, item.weight)}
+        className="text-red-500 hover:text-red-700 ml-2 text-sm"
+        title="Remove Item"
+      >
+        ❌
+      </button>
+    </li>
+  ))}
+</ul>
 
               <div className="mt-4 font-semibold text-right text-lg">
                 Total: <span className="text-green-600">PKR {Math.round(totalPrice)}</span>
