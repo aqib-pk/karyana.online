@@ -195,7 +195,7 @@ const OfflineOrdersPage = () => {
     <div className="p-6">
       {/* Customer info & payment */}
       {/* Cart */}
-      <div className="w-80 fixed top-20 right-5 bg-white shadow-lg rounded p-4 max-h-[80vh] overflow-auto not-fixed-on-tablet">
+      <div className="w-80 fixed top-20 right-5 bg-white shadow-lg rounded p-4 max-h-[80vh] overflow-auto not-fixed-on-tablet z-40">
         <h2 className="text-xl font-semibold mb-4">Order Items</h2>
         {selectedItems.length === 0 && <p>No items selected.</p>}
         {selectedItems.map((item) => (
