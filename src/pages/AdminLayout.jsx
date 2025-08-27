@@ -139,7 +139,7 @@ const AdminLayout = () => {
             <span>Offline Orders</span>
           </Link>
 
-          <Link
+          {/* <Link
             to={`/${storeSlug}/admin/admin-copy-products`}
             className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
               location.pathname === `/${storeSlug}/admin-copy-products` ? "bg-green-900" : ""
@@ -147,7 +147,7 @@ const AdminLayout = () => {
           >
             <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
             <span>Copy Products</span>
-          </Link>
+          </Link> */}
 
           <Link
             to={`/${storeSlug}/admin/offline-orders-list`}

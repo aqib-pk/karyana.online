@@ -18,6 +18,7 @@ const FloatingCart = () => {
 
   // ✅ Correct total items & price calculation
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const uniqueItemsCount = cartItems.length;
 const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
 
   const { language } = useLanguage();
@@ -76,7 +77,7 @@ const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
         </svg>
         {totalItems > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-xs px-2 py-0.5 rounded-full">
-            {totalItems}
+            {uniqueItemsCount}
           </span>
         )}
       </div>
