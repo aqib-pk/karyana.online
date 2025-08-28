@@ -1,8 +1,9 @@
 // src/pages/DashboardPage.jsx
 import React, { useEffect, useState } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "../firebase";
 import { useStore } from "../context/StoreContext";
+import { useLanguage } from "../context/LanguageContext";
 import {
   BarChart,
   Bar,
@@ -19,8 +20,10 @@ import {
 
 const DashboardPage = () => {
   const { storeId } = useStore();
+  const { language } = useLanguage(); // 🔹 use language context
   const [offlineStats, setOfflineStats] = useState({ today: 0, weekly: 0, monthly: 0 });
   const [onlineStats, setOnlineStats] = useState({ today: 0, weekly: 0, monthly: 0 });
+  const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // 🔹 Helper: Calculate revenue for an order
@@ -70,7 +73,7 @@ const DashboardPage = () => {
           const order = doc.data();
           if (!order.createdAt) return;
           const orderDate = order.createdAt.toDate();
-          const revenue = getOrderRevenue(order); // ✅ must calculate
+          const revenue = getOrderRevenue(order);
           if (orderDate >= startOfToday) onlineToday += revenue;
           if (orderDate >= startOfWeek) onlineWeek += revenue;
           if (orderDate >= startOfMonth) onlineMonth += revenue;
@@ -78,6 +81,20 @@ const DashboardPage = () => {
 
         setOfflineStats({ today: offlineToday, weekly: offlineWeek, monthly: offlineMonth });
         setOnlineStats({ today: onlineToday, weekly: onlineWeek, monthly: onlineMonth });
+
+        // -------- Recent Orders (latest 5) --------
+        const recentOrdersRef = query(
+          collection(db, "stores", storeId, "orders"),
+          orderBy("createdAt", "desc"),
+          limit(5)
+        );
+        const recentSnapshot = await getDocs(recentOrdersRef);
+        const orders = recentSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setRecentOrders(orders);
+
       } catch (error) {
         console.error("Error fetching sales stats:", error);
       }
@@ -128,7 +145,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
         {/* Grouped Bar Chart */}
         <div className="bg-white p-6 rounded shadow border">
           <h2 className="text-xl font-semibold mb-4">Online vs Offline Sales</h2>
@@ -166,6 +183,50 @@ const DashboardPage = () => {
             </PieChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Recent Orders */}
+      <div className="bg-white p-6 rounded shadow border">
+        <h2 className="text-xl font-semibold mb-4">🛒 Recent Orders</h2>
+        {recentOrders.length === 0 ? (
+          <p className="text-gray-500">No recent orders found.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 text-left">Customer</th>
+                  <th className="p-2 text-left">Items</th>
+                  <th className="p-2 text-left">Total</th>
+                  <th className="p-2 text-left">Date</th>
+                  <th className="p-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentOrders.map(order => (
+                  <tr key={order.id} className="border-t">
+                    <td className="p-2">{order.fullName || "Guest"}</td>
+                    <td className="p-2">
+                      {order.cartItems?.map((item, i) => (
+                        <div key={i}>
+                          {item.name?.[language] || item.name?.en || item.name?.ur || "Unnamed"}{" "}
+                          ({item.quantity} {item.unit})
+                        </div>
+                      ))}
+                    </td>
+                    <td className="p-2 font-semibold">
+                      PKR {getOrderRevenue(order).toLocaleString()}
+                    </td>
+                    <td className="p-2">
+                      {order.createdAt?.toDate().toLocaleDateString()}
+                    </td>
+                    <td className="p-2">{order.status || "Pending"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
