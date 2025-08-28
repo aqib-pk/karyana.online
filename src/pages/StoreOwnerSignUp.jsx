@@ -27,7 +27,7 @@ const StoreOwnerSignUp = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const subscriptionPrice = 6000; // fixed monthly fee
+  const subscriptionPrice = 5000; // fixed monthly fee
   const navigate = useNavigate();
 
   const handleChange = (e) => {

@@ -204,7 +204,7 @@ const LandingPage = () => {
           <div className="bg-white shadow rounded-lg p-8">
             <h3 className="text-2xl font-bold mb-4">Standard Plan</h3>
             <p className="text-4xl font-extrabold text-green-500">
-              6000 PKR <span className="text-lg font-normal">/ month</span>
+              5000 PKR <span className="text-lg font-normal">/ month</span>
             </p>
             <ul className="mt-6 space-y-2">
               <li>✅ Full access to all features</li>
