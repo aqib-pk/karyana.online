@@ -47,20 +47,18 @@ function formatItems(cartItems) {
   return (Array.isArray(cartItems) ? cartItems : [])
     .map((item) => {
       const itemName = typeof item.name === "object" ? item.name.en : item.name;
-      const qty = item.quantity ? ` x${item.quantity}` : "";
+      const qty = Number(item.quantity || 1);
       const weight = item.weight ? ` (${item.weight})` : "";
-      const price = item.price ? ` - Rs ${item.price}` : "";
-      return `${itemName}${weight}${qty}${price}`;
+      const price = Number(item.price || 0); // already total, not per unit
+
+      return `${itemName}${weight}  - Rs ${price}`;
     })
     .join("\n") || "No items listed";
 }
 
-// 💰 Total price calculator
 function calculateTotalPrice(order) {
   const itemsTotal = (order.cartItems || []).reduce((sum, item) => {
-    const price = Number(item.price || 0);
-    const qty = Number(item.quantity || 1);
-    return sum + price * qty;
+    return sum + Number(item.price || 0); // ✅ no * qty
   }, 0);
   const deliveryCharge = order.deliveryOption === "delivery" ? Number(order.deliveryCharges || 0) : 0;
   return itemsTotal + deliveryCharge;

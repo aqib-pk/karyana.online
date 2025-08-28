@@ -51,8 +51,9 @@ export const CartProvider = ({ children }) => {
       },
     ];
   });
-
+  if (window.innerWidth >= 768) {
   setIsCartOpen(true);
+  }
 };
 
 

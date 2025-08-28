@@ -137,15 +137,15 @@ const Checkout = ({ onClose, storeId: propStoreId }) => {
 
       // 3️⃣ Update inventory for each product
       for (const item of cartItems) {
-        try {
-          const productRef = doc(db, "stores", storeId, "products", item.id);
-          await updateDoc(productRef, {
-            inventory: increment(-item.weightKg),
-          });
-        } catch (err) {
-          console.error(`Failed to update inventory for ${item.name}`, err);
-        }
-      }
+  try {
+    const productRef = doc(db, "stores", storeId, "products", item.id);
+    await updateDoc(productRef, {
+      inventory: increment(-item.quantity), // ✅ decrease by number of units ordered
+    });
+  } catch (err) {
+    console.error(`Failed to update inventory for ${item.name}`, err);
+  }
+}
 
       setShowSuccess(true);
       clearCart();
