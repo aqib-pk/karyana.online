@@ -336,7 +336,7 @@ const AdminLayout = () => {
           </button>
 
           {/* Notification bell */}
-          <button onClick={handleBellClick} className="relative p-2 ml-auto">
+          <button onClick={handleBellClick} className="fixed top-[30px] right-[30px]">
             <BellIcon className="h-6 w-6 text-gray-700" />
             {hasNewOrders && (
               <>
