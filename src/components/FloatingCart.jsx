@@ -16,30 +16,37 @@ const FloatingCart = () => {
     clearCart,
   } = useCart();
 
-  // ✅ Correct total items & price calculation
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const uniqueItemsCount = cartItems.length;
-const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
 
   const { language } = useLanguage();
   const t = translations[language];
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [storeId, setStoreId] = useState(null);
-
-  // ✅ Get store slug from URL
   const { storeSlug } = useParams();
 
-  // ✅ Fetch storeId using storeSlug (not auth.currentUser)
+  // ✅ Animation state
+  const [bump, setBump] = useState(false);
+
+  // Trigger bump animation when cartItems change
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+
+    setBump(true);
+    const timer = setTimeout(() => setBump(false), 300); // animation duration
+    return () => clearTimeout(timer);
+  }, [cartItems]);
+
+  // Fetch storeId
   useEffect(() => {
     const fetchStoreId = async () => {
       try {
         if (!storeSlug) return;
-
         const storesRef = collection(db, "stores");
         const q = query(storesRef, where("storeSlug", "==", storeSlug));
         const snapshot = await getDocs(q);
-
         if (!snapshot.empty) {
           setStoreId(snapshot.docs[0].id);
         } else {
@@ -49,7 +56,6 @@ const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
         console.error("Failed to fetch storeId in FloatingCart:", error);
       }
     };
-
     fetchStoreId();
   }, [storeSlug]);
 
@@ -58,7 +64,9 @@ const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
       {/* Floating Cart Icon */}
       <div
         onClick={() => setIsCartOpen(!isCartOpen)}
-        className="fixed bottom-6 right-6 bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg cursor-pointer z-50"
+        className={`fixed bottom-6 right-6 bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg cursor-pointer z-50 transition-transform duration-300 ${
+          bump ? "animate-bump" : ""
+        }`}
         title="Open Cart"
       >
         <svg
@@ -106,42 +114,33 @@ const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
           ) : (
             <>
               <ul className="divide-y">
-  {cartItems.map((item) => (
-    <li
-      key={`${item.id}-${item.weight}`}
-      className="py-2 flex justify-between items-center text-sm"
-    >
-      <div className="flex flex-col">
-        <span>
-          {typeof item.name === "object" ? item.name[language] : item.name}
-        </span>
-
-        {/* ✅ Show selected weight/unit */}
-        <span className="text-xs text-gray-500">
-          {item.weight}
-        </span>
-
-        {/* ✅ Use already calculated price */}
-        <span className="text-xs text-gray-600">
-          {Math.round(item.price)} Rs
-        </span>
-      </div>
-      <button
-        onClick={() => removeFromCart(item.id, item.weight)}
-        className="text-red-500 hover:text-red-700 ml-2 text-sm"
-        title="Remove Item"
-      >
-        ❌
-      </button>
-    </li>
-  ))}
-</ul>
+                {cartItems.map((item) => (
+                  <li
+                    key={`${item.id}-${item.weight}`}
+                    className="py-2 flex justify-between items-center text-sm"
+                  >
+                    <div className="flex flex-col">
+                      <span>
+                        {typeof item.name === "object" ? item.name[language] : item.name}
+                      </span>
+                      <span className="text-xs text-gray-500">{item.weight}</span>
+                      <span className="text-xs text-gray-600">{Math.round(item.price)} Rs</span>
+                    </div>
+                    <button
+                      onClick={() => removeFromCart(item.id, item.weight)}
+                      className="text-red-500 hover:text-red-700 ml-2 text-sm"
+                      title="Remove Item"
+                    >
+                      ❌
+                    </button>
+                  </li>
+                ))}
+              </ul>
 
               <div className="mt-4 font-semibold text-right text-lg">
                 Total: <span className="text-green-600">PKR {Math.round(totalPrice)}</span>
               </div>
 
-              {/* Proceed to Checkout Button */}
               <button
                 onClick={() => setShowCheckout(true)}
                 className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-md font-semibold transition"
@@ -157,7 +156,6 @@ const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
       {showCheckout && storeId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-lg relative">
-            {/* Close Button */}
             <button
               onClick={() => setShowCheckout(false)}
               className="absolute top-2 right-4 text-gray-600 hover:text-black text-xl"
@@ -165,12 +163,24 @@ const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
             >
               &times;
             </button>
-
-            {/* Pass storeId prop here */}
             <Checkout storeId={storeId} onClose={() => setShowCheckout(false)} />
           </div>
         </div>
       )}
+
+      {/* Bump Animation CSS */}
+      <style>
+        {`
+          @keyframes bump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+          }
+          .animate-bump {
+            animation: bump 0.3s ease-out;
+          }
+        `}
+      </style>
     </>
   );
 };

@@ -16,6 +16,7 @@ import {
 import { db } from "../firebase";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext"; // ✅ Auth context
+import toast, { Toaster } from "react-hot-toast"; // ✅ Toast
 
 // --- LanguageSwitcher remains unchanged ---
 const LanguageSwitcher = () => {
@@ -31,7 +32,7 @@ const LanguageSwitcher = () => {
   );
 };
 
-// --- ProductCard remains unchanged ---
+// --- ProductCard with toast ---
 const ProductCard = ({ product }) => {
   const { language } = useLanguage();
   const t = translations[language];
@@ -69,38 +70,40 @@ const ProductCard = ({ product }) => {
     displayWeight = `${selectedQty} Dozen${selectedQty > 1 ? "s" : ""}`;
   }
 
-    // inside ProductCard
+  const handleAddToCart = () => {
+    if (calculatedPrice === 0) {
+      alert("Please select a valid quantity");
+      return;
+    }
 
-const handleAddToCart = () => {
-  if (calculatedPrice === 0) {
-    alert("Please select a valid quantity");
-    return;
-  }
+    let finalQuantity = 1;
 
-  let finalQuantity = 1;
+    if (product.unit === "Kg") {
+      finalQuantity = (selectedKg * 1000 + selectedGram) / 1000; // convert to kg
+    } else if (product.unit === "Liters") {
+      finalQuantity = (selectedLiters * 1000 + selectedMl) / 1000; // convert to L
+    } else if (product.unit === "Pieces" || product.unit === "Dozens") {
+      finalQuantity = selectedQty;
+    }
 
-  if (product.unit === "Kg") {
-    finalQuantity = (selectedKg * 1000 + selectedGram) / 1000; // convert to kg
-  } else if (product.unit === "Liters") {
-    finalQuantity = (selectedLiters * 1000 + selectedMl) / 1000; // convert to L
-  } else if (product.unit === "Pieces" || product.unit === "Dozens") {
-    finalQuantity = selectedQty;
-  }
+    addToCart({
+      ...product,
+      name: {
+        en: product.name?.[language] || product.name,
+        ur: product.name?.[language] || product.name,
+      },
+      subcategory: product.subcategory?.[language] || "",
+      price: calculatedPrice,   // ✅ total price
+      basePrice: product.price, // ✅ per unit base price
+      quantity: finalQuantity,  // ✅ now correct for Kg, L, Pieces, Dozens
+      weight: displayWeight,    // readable string
+    });
 
-  addToCart({
-    ...product,
-    name: {
-      en: product.name?.[language] || product.name,
-      ur: product.name?.[language] || product.name,
-    },
-    subcategory: product.subcategory?.[language] || "",
-    price: calculatedPrice,   // ✅ total price
-    basePrice: product.price, // ✅ per unit base price
-    quantity: finalQuantity,  // ✅ now correct for Kg, L, Pieces, Dozens
-    weight: displayWeight,    // readable string
-  });
-};
-
+    // ✅ Toast notification
+    toast.success(`${product.name?.[language] || product.name} added to cart!`, {
+      duration: 2000,
+    });
+  };
 
   const imageUrl =
     product.imageUrl && product.imageUrl.trim() !== ""
@@ -136,69 +139,66 @@ const handleAddToCart = () => {
 
         {/* Dynamic dropdowns based on unit */}
         {product.unit === "Kg" && (
-  <div className="flex gap-2 mb-2">
-    <select
-      value={selectedKg}
-      onChange={(e) => setSelectedKg(Number(e.target.value))}
-      className="p-1 border rounded-md text-sm w-full"
-    >
-      {Array.from({ length: 21 }, (_, i) => (
-        <option key={i} value={i}>
-          {i} kg
-        </option>
-      ))}
-    </select>
+          <div className="flex gap-2 mb-2">
+            <select
+              value={selectedKg}
+              onChange={(e) => setSelectedKg(Number(e.target.value))}
+              className="p-1 border rounded-md text-sm w-full"
+            >
+              {Array.from({ length: 21 }, (_, i) => (
+                <option key={i} value={i}>
+                  {i} kg
+                </option>
+              ))}
+            </select>
 
-    <select
-      value={selectedGram}
-      onChange={(e) => setSelectedGram(Number(e.target.value))}
-      className="p-1 border rounded-md text-sm w-full"
-    >
-      {/* ✅ Only these gram options */}
-      {[0, 100, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map((g) => (
-        <option key={g} value={g}>
-          {g} g
-        </option>
-      ))}
-    </select>
-  </div>
-)}
+            <select
+              value={selectedGram}
+              onChange={(e) => setSelectedGram(Number(e.target.value))}
+              className="p-1 border rounded-md text-sm w-full"
+            >
+              {[0, 100, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map((g) => (
+                <option key={g} value={g}>
+                  {g} g
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-{product.unit === "Liters" && (
-  <div className="flex gap-2 mb-2">
-    <select
-      value={selectedLiters}
-      onChange={(e) => setSelectedLiters(Number(e.target.value))}
-      className="p-1 border rounded-md text-sm w-full"
-    >
-      {Array.from({ length: 11 }, (_, i) => (
-        <option key={i} value={i}>
-          {i} L
-        </option>
-      ))}
-    </select>
+        {product.unit === "Liters" && (
+          <div className="flex gap-2 mb-2">
+            <select
+              value={selectedLiters}
+              onChange={(e) => setSelectedLiters(Number(e.target.value))}
+              className="p-1 border rounded-md text-sm w-full"
+            >
+              {Array.from({ length: 11 }, (_, i) => (
+                <option key={i} value={i}>
+                  {i} L
+                </option>
+              ))}
+            </select>
 
-    <select
-      value={selectedMl}
-      onChange={(e) => setSelectedMl(Number(e.target.value))}
-      className="p-1 border rounded-md text-sm w-full"
-    >
-      {/* ✅ Dairy restriction */}
-      {product.category === "Dairy"
-        ? [0, 250, 500].map((ml) => (
-            <option key={ml} value={ml}>
-              {ml} ml
-            </option>
-          ))
-        : [0, 100, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map((ml) => (
-            <option key={ml} value={ml}>
-              {ml} ml
-            </option>
-          ))}
-    </select>
-  </div>
-)}
-
+            <select
+              value={selectedMl}
+              onChange={(e) => setSelectedMl(Number(e.target.value))}
+              className="p-1 border rounded-md text-sm w-full"
+            >
+              {product.category === "Dairy"
+                ? [0, 250, 500].map((ml) => (
+                    <option key={ml} value={ml}>
+                      {ml} ml
+                    </option>
+                  ))
+                : [0, 100, 200, 250, 300, 400, 500, 600, 700, 750, 800, 900].map((ml) => (
+                    <option key={ml} value={ml}>
+                      {ml} ml
+                    </option>
+                  ))}
+            </select>
+          </div>
+        )}
 
         {(product.unit === "Pieces" || product.unit === "Dozens") && (
           <div className="mb-2">
@@ -208,18 +208,17 @@ const handleAddToCart = () => {
               className="p-1 border rounded-md text-sm w-full"
             >
               {Array.from({ length: 200 }, (_, i) => {
-  const qty = i + 1;
-  return (
-    <option key={qty} value={qty}>
-      {qty} {product.unit}
-    </option>
-  );
-})}
+                const qty = i + 1;
+                return (
+                  <option key={qty} value={qty}>
+                    {qty} {product.unit}
+                  </option>
+                );
+              })}
             </select>
           </div>
         )}
 
-  
         <p className="text-xl font-bold text-green-600 mb-3">
           PKR {calculatedPrice}
         </p>
@@ -236,14 +235,14 @@ const handleAddToCart = () => {
           {t.addToCart}
         </button>
       </div>
+
+      {/* ✅ Toaster for this card */}
+      <Toaster />
     </div>
   );
 };
 
-
-
-
-// --- ProductListing ---
+// --- ProductListing remains unchanged ---
 const formatPhoneForWhatsapp = (phone) => {
   if (!phone) return "";
   if (phone.startsWith("0")) {
