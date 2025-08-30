@@ -238,3 +238,19 @@ select {
 button.bg-yellow-500.text-white.px-3.py-1.rounded.hover\:bg-yellow-600 {
     margin-right: 5px;
 }
+
+body {
+    background-color: rgb(243 244 246 / var(--tw-bg-opacity, 1));
+}
+@media only screen and (min-width:1920px) {
+    #root {
+        max-width: 1920px;
+        margin:0 auto;
+    }
+}
+
+.grid .text-lg {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

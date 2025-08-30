@@ -339,7 +339,7 @@ const OfflineOrdersPage = () => {
         {sortedCategories.map(category => (
           <div key={category} className="mb-8">
             <h3 className="text-xl font-bold mb-4 border-b border-gray-300 pb-1">{category}</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-6">
               {groupedProducts[category].map(product => {
                 const imageUrl = product.imageUrl?.trim() || product.image?.trim() || "/default-images/others.jpg";
                 const weight = weightSelections[product.id] || {};

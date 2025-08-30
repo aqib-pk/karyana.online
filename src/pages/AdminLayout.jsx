@@ -109,6 +109,24 @@ const AdminLayout = () => {
             <span>Online Orders</span>
           </Link>
           <Link
+            to={`/${storeSlug}/admin/offline-orders`}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/offline-orders` ? "bg-green-900" : ""
+            }`}
+          >
+            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
+            <span>Offline Orders</span>
+          </Link>
+          <Link
+            to={`/${storeSlug}/admin/offline-orders-list`}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/offline-orders-list` ? "bg-green-900" : ""
+            }`}
+          >
+            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
+            <span>Offline Orders List</span>
+          </Link>
+          <Link
             to={`/${storeSlug}/admin/products`}
             className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
               location.pathname === `/${storeSlug}/admin/products` ? "bg-green-900" : ""
@@ -129,16 +147,6 @@ const AdminLayout = () => {
             <span>Categories</span>
           </Link>
 
-          <Link
-            to={`/${storeSlug}/admin/offline-orders`}
-            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
-              location.pathname === `/${storeSlug}/admin/offline-orders` ? "bg-green-900" : ""
-            }`}
-          >
-            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
-            <span>Offline Orders</span>
-          </Link>
-
           {/* <Link
             to={`/${storeSlug}/admin/admin-copy-products`}
             className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
@@ -149,15 +157,6 @@ const AdminLayout = () => {
             <span>Copy Products</span>
           </Link> */}
 
-          <Link
-            to={`/${storeSlug}/admin/offline-orders-list`}
-            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
-              location.pathname === `/${storeSlug}/admin/offline-orders-list` ? "bg-green-900" : ""
-            }`}
-          >
-            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
-            <span>Offline Orders List</span>
-          </Link>
 
           {/* ✅ Subscription Link */}
           <Link
@@ -235,6 +234,26 @@ const AdminLayout = () => {
             <span>Online Orders</span>
           </Link>
           <Link
+            to={`/${storeSlug}/admin/offline-orders`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/offline-orders` ? "bg-green-900" : ""
+            }`}
+          >
+            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
+            <span>Offline Orders</span>
+          </Link>
+          <Link
+            to={`/${storeSlug}/admin/offline-orders-list`}
+            onClick={() => setIsSidebarOpen(false)}
+            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
+              location.pathname === `/${storeSlug}/admin/offline-orders-list` ? "bg-green-900" : ""
+            }`}
+          >
+            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
+            <span>Offline Orders List</span>
+          </Link>
+          <Link
             to={`/${storeSlug}/admin/products`}
             onClick={() => setIsSidebarOpen(false)}
             className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
@@ -266,26 +285,6 @@ const AdminLayout = () => {
           >
             <Cog6ToothIcon className="h-5 w-5 text-white" />
             <span>Settings</span>
-          </Link>
-          <Link
-            to={`/${storeSlug}/admin/offline-orders`}
-            onClick={() => setIsSidebarOpen(false)}
-            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
-              location.pathname === `/${storeSlug}/admin/offline-orders` ? "bg-green-900" : ""
-            }`}
-          >
-            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
-            <span>Offline Orders</span>
-          </Link>
-          <Link
-            to={`/${storeSlug}/admin/offline-orders-list`}
-            onClick={() => setIsSidebarOpen(false)}
-            className={`flex items-center gap-2 px-3 py-2 rounded hover:bg-green-800 ${
-              location.pathname === `/${storeSlug}/admin/offline-orders-list` ? "bg-green-900" : ""
-            }`}
-          >
-            <ClipboardDocumentListIcon className="h-5 w-5 text-white" />
-            <span>Offline Orders List</span>
           </Link>
 
           {/* ✅ Subscription Link (Mobile) */}
