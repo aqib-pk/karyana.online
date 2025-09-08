@@ -58,25 +58,28 @@ export const AuthProvider = ({ children }) => {
     setCustomer(null);
   };
 
-  // track auth state
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setCurrentUser(user);
+  const unsub = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      setCurrentUser(user);
 
-        // fetch profile
+      try {
         const snap = await getDoc(doc(db, "customers", user.uid));
         if (snap.exists()) {
           setCustomer(snap.data());
         }
-      } else {
-        setCurrentUser(null);
-        setCustomer(null);
+      } catch (err) {
+        console.error("Error fetching customer profile:", err);
       }
-      setLoading(false);
-    });
-    return () => unsub();
-  }, []);
+
+    } else {
+      setCurrentUser(null);
+      setCustomer(null);
+    }
+    setLoading(false);
+  });
+  return () => unsub();
+}, []);
 
   return (
     <AuthContext.Provider value={{ currentUser, customer, signup, login, logout }}>
