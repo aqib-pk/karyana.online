@@ -41,13 +41,16 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await signInWithEmailAndPassword(auth, email, password);
 
-    // ✅ fetch profile from Firestore
-    const snap = await getDoc(doc(db, "customers", res.user.uid));
-    if (snap.exists()) {
-      setCustomer(snap.data());
+    try {
+      const snap = await getDoc(doc(db, "customers", res.user.uid));
+      if (snap.exists()) {
+        setCustomer(snap.data());
+      }
+    } catch (err) {
+      console.error("Error fetching customer profile on login:", err);
     }
-    setCurrentUser(res.user);
 
+    setCurrentUser(res.user);
     return res.user;
   };
 
@@ -59,27 +62,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
-  const unsub = onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      setCurrentUser(user);
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setCurrentUser(user);
 
-      try {
-        const snap = await getDoc(doc(db, "customers", user.uid));
-        if (snap.exists()) {
-          setCustomer(snap.data());
+        try {
+          const snap = await getDoc(doc(db, "customers", user.uid));
+          if (snap.exists()) {
+            setCustomer(snap.data());
+          } else {
+            setCustomer({ name: user.displayName || "Guest", email: user.email });
+          }
+        } catch (err) {
+          console.error("Error fetching customer profile:", err);
+          setCustomer({ name: user.displayName || "Guest", email: user.email });
         }
-      } catch (err) {
-        console.error("Error fetching customer profile:", err);
+      } else {
+        // ✅ visitor / guest
+        setCurrentUser(null);
+        setCustomer(null);
       }
+      setLoading(false);
+    });
 
-    } else {
-      setCurrentUser(null);
-      setCustomer(null);
-    }
-    setLoading(false);
-  });
-  return () => unsub();
-}, []);
+    return () => unsub();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ currentUser, customer, signup, login, logout }}>
