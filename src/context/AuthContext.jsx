@@ -14,18 +14,16 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);   // raw Firebase user
-  const [customer, setCustomer] = useState(null);         // Firestore customer profile
+  const [currentUser, setCurrentUser] = useState(null);
+  const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // signup
   const signup = async (name, email, password) => {
     const res = await createUserWithEmailAndPassword(auth, email, password);
 
-    // ✅ set display name
     await updateProfile(res.user, { displayName: name });
 
-    // ✅ save profile in Firestore
     await setDoc(doc(db, "customers", res.user.uid), {
       name,
       email,
@@ -66,19 +64,22 @@ export const AuthProvider = ({ children }) => {
       if (user) {
         setCurrentUser(user);
 
+        // ✅ only fetch customer profile if needed (user logged in)
         try {
           const snap = await getDoc(doc(db, "customers", user.uid));
           if (snap.exists()) {
             setCustomer(snap.data());
           } else {
-            setCustomer({ name: user.displayName || "Guest", email: user.email });
+            setCustomer({
+              name: user.displayName || "User",
+              email: user.email,
+            });
           }
         } catch (err) {
           console.error("Error fetching customer profile:", err);
-          setCustomer({ name: user.displayName || "Guest", email: user.email });
         }
       } else {
-        // ✅ visitor / guest
+        // ✅ guest browsing → don’t touch customers collection
         setCurrentUser(null);
         setCustomer(null);
       }
