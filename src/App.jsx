@@ -29,7 +29,7 @@ import StoreNotFound from "./pages/StoreNotFound";
 
 import { auth, db } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 
 // ✅ newly added imports
 import { AuthProvider } from "./context/AuthContext";
@@ -64,15 +64,14 @@ function App() {
       setUser(currentUser);
       if (currentUser) {
         try {
-          const usersRef = collection(db, "users");
-          const q = query(usersRef, where("email", "==", currentUser.email));
-          const querySnapshot = await getDocs(q);
+          const userRef = doc(db, "users", currentUser.uid);
+          const userSnap = await getDoc(userRef);
 
-          if (!querySnapshot.empty) {
-            const userData = querySnapshot.docs[0].data();
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
             setIsSuperAdmin(userData.role === "superadmin");
 
-            if (userData.role === "storeowner") {
+            if (userData.role === "storeOwner") {
               const storeRef = collection(db, "stores");
               const sq = query(storeRef, where("storeOwnerId", "==", currentUser.uid));
               const storeSnap = await getDocs(sq);

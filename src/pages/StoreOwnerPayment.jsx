@@ -91,7 +91,7 @@ const StoreOwnerPayment = () => {
 
     try {
       // Upload screenshot to Firebase Storage
-      const storageRef = ref(storage, `payment_screenshots/${store.id}_${Date.now()}`);
+      const storageRef = ref(storage, `payment_screenshots/${store.id}/${Date.now()}`);
       await uploadBytes(storageRef, screenshotFile);
       const downloadURL = await getDownloadURL(storageRef);
 

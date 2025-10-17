@@ -49,7 +49,10 @@ const SubscriptionPage = () => {
 
     try {
       setSubmitting(true);
-      const storageRef = ref(storage, `paymentProofs/${auth.currentUser.uid}_${Date.now()}`);
+      const storageRef = ref(
+        storage,
+        `payment_screenshots/${subscription.id}/${Date.now()}`
+      );
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
 

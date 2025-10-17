@@ -47,23 +47,24 @@ const Checkout = ({ onClose, storeId: propStoreId }) => {
     }
   }, [propStoreId]);
 
-  // ✅ Fetch delivery rate
-  useEffect(() => {
-    const fetchRate = async () => {
-      try {
-        const snap = await getDoc(doc(db, "settings", "delivery"));
-        if (snap.exists()) {
-          setDeliveryRate(snap.data().rate || 0);
-        } else {
-          setDeliveryRate(0);
-        }
-      } catch (error) {
-        console.error("Error fetching delivery rate:", error);
+  // ✅ Fetch delivery rate for this specific store
+useEffect(() => {
+  const fetchRate = async () => {
+    if (!storeId) return; // wait until we know which store we're in
+    try {
+      const snap = await getDoc(doc(db, "stores", storeId, "settings", "delivery"));
+      if (snap.exists()) {
+        setDeliveryRate(snap.data().rate || 0);
+      } else {
         setDeliveryRate(0);
       }
-    };
-    fetchRate();
-  }, []);
+    } catch (error) {
+      console.error("Error fetching delivery rate:", error);
+      setDeliveryRate(0);
+    }
+  };
+  fetchRate();
+}, [storeId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

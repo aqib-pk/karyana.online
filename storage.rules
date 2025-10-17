@@ -1,0 +1,47 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == "superadmin";
+    }
+
+    function ownsStore(storeId) {
+      return isSignedIn() &&
+        get(/databases/(default)/documents/stores/$(storeId)).data.storeOwnerId == request.auth.uid;
+    }
+
+    match /payment_screenshots/{storeId}/{fileId} {
+      allow read: if isSuperAdmin() || ownsStore(storeId);
+      allow write: if ownsStore(storeId);
+    }
+
+    match /payment_proofs/{storeId}/{fileId} {
+      allow read: if isSuperAdmin() || ownsStore(storeId);
+      allow write: if ownsStore(storeId);
+    }
+
+    match /stores/{storeId}/{folder}/{fileName} {
+      allow read: if true;
+      allow write: if isSuperAdmin() || ownsStore(storeId);
+    }
+
+    match /storeLogos/{storeId}/{fileName} {
+      allow read: if true;
+      allow write: if isSuperAdmin() || ownsStore(storeId);
+    }
+
+    match /product-images/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

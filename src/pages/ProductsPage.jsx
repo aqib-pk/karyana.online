@@ -123,9 +123,12 @@ const ProductsPage = () => {
   }, [storeId]);
 
   // Upload image to storage and get URL
-  const uploadImageAndGetUrl = async (file, productId) => {
-    if (!file) return null;
-    const imageRef = ref(storage, `product-images/${productId}-${file.name}`);
+  const uploadImageAndGetUrl = async (file, productId, currentStoreId) => {
+    if (!file || !currentStoreId) return null;
+    const imageRef = ref(
+      storage,
+      `stores/${currentStoreId}/products/${productId}-${file.name}`
+    );
     await uploadBytes(imageRef, file);
     const url = await getDownloadURL(imageRef);
     return url;
@@ -163,7 +166,7 @@ const ProductsPage = () => {
       let imageUrl = "";
 
       if (imageFile) {
-        imageUrl = await uploadImageAndGetUrl(imageFile, docRef.id);
+        imageUrl = await uploadImageAndGetUrl(imageFile, docRef.id, storeId);
       } else {
         const selectedCategory = categories.find((c) => c.name === category);
         imageUrl = selectedCategory?.imageUrl || "/default-images/default.jpg";
@@ -253,7 +256,7 @@ const ProductsPage = () => {
       let updatedImageUrl = imageUrl;
 
       if (imageFile) {
-        updatedImageUrl = await uploadImageAndGetUrl(imageFile, id);
+        updatedImageUrl = await uploadImageAndGetUrl(imageFile, id, storeId);
       }
 
       await updateDoc(doc(db, "stores", storeId, "products", id), {
